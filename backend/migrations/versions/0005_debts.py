@@ -17,6 +17,7 @@ depends_on = None
 DEBT_TYPE_ENUM = postgresql.ENUM(
     "credit_card", "personal_loan", "vehicle", "home_loan", "store_account", "other",
     name="debt_type_enum",
+    create_type=False,
 )
 
 

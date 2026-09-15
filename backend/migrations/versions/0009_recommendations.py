@@ -15,7 +15,7 @@ branch_labels = None
 depends_on = None
 
 RECOMMENDATION_STATUS_ENUM = postgresql.ENUM(
-    "active", "dismissed", "acted_on", name="recommendation_status_enum"
+    "active", "dismissed", "acted_on", name="recommendation_status_enum", create_type=False
 )
 
 
