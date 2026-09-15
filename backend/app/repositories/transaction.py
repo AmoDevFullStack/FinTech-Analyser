@@ -65,6 +65,14 @@ class TransactionRepository:
         stmt = stmt.order_by(Transaction.occurred_on.desc()).limit(limit)
         return list(self._session.scalars(stmt))
 
+    def get_for_user(self, transaction_id: UUID, *, user_id: UUID) -> Transaction | None:
+        stmt = select(Transaction).where(
+            Transaction.id == transaction_id,
+            Transaction.user_id == user_id,
+            Transaction.deleted_at.is_(None),
+        )
+        return self._session.scalars(stmt).first()
+
     def fingerprint_exists(self, fingerprint: str, *, user_id: UUID) -> bool:
         stmt = select(Transaction.id).where(
             Transaction.user_id == user_id,

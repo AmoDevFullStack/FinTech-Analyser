@@ -21,11 +21,25 @@ def create_import():
     if not account_id:
         raise ValidationError("'account_id' is required.")
 
+    # An explicit mapping is how a user gets past a format this build cannot detect;
+    # it is remembered against the account, so it is supplied once, not every import.
+    mapping = None
+    if request.form.get("mapping"):
+        import json
+
+        from app.services.csv_formats import ColumnMapping
+
+        try:
+            mapping = ColumnMapping(**json.loads(request.form["mapping"]))
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(f"Invalid column mapping: {exc}") from exc
+
     service = ImportService(db.session)
     summary = service.stage_csv(
         user_id=g.user_id,
         account_id=UUID(account_id),
         file_bytes=request.files["file"].read(),
+        mapping=mapping,
     )
     return jsonify(_summary_dict(summary)), 202
 
@@ -46,6 +60,7 @@ def get_import(batch_id):
                 "rows_imported": batch.rows_imported,
                 "rows_skipped_duplicate": batch.rows_skipped_duplicate,
                 "rows_pending_conflict": batch.rows_pending_conflict,
+                "rows_merged": batch.rows_merged,
             }
         ),
         200,
@@ -116,4 +131,5 @@ def _summary_dict(summary) -> dict:
         "rows_imported": summary.rows_imported,
         "rows_skipped_duplicate": summary.rows_skipped_duplicate,
         "rows_pending_conflict": summary.rows_pending_conflict,
+        "rows_merged": summary.rows_merged,
     }

@@ -1,8 +1,13 @@
-from flask import Blueprint, g, jsonify
+from uuid import UUID
+
+from flask import Blueprint, g, jsonify, request
 
 from app.core.auth import require_auth
+from app.core.errors import NotFoundError, ValidationError
 from app.core.extensions import db
 from app.repositories.category import CategoryRepository
+from app.repositories.transaction import TransactionRepository
+from app.services.categorisation import CategorisationService
 
 bp = Blueprint("categories", __name__, url_prefix="/categories")
 
@@ -24,6 +29,44 @@ def list_categories():
                     }
                     for c in categories
                 ]
+            }
+        ),
+        200,
+    )
+
+
+@bp.post("/corrections")
+@require_auth
+def correct_category():
+    """Record a user's category correction and learn from it immediately.
+
+    specs/transactions.md: "Corrections also become training signal for that user's future
+    categorisation" — so this returns how many other uncorrected transactions the
+    correction moved, rather than silently improving them.
+    """
+    body = request.get_json(force=True, silent=True) or {}
+    for required in ("transaction_id", "category_id"):
+        if not body.get(required):
+            raise ValidationError(f"'{required}' is required.")
+
+    transaction = TransactionRepository(db.session).get_for_user(
+        UUID(body["transaction_id"]), user_id=g.user_id
+    )
+    if transaction is None:
+        raise NotFoundError("No transaction with that identifier exists for this user.")
+
+    propagated = CategorisationService(db.session).correct(
+        transaction,
+        category_id=UUID(body["category_id"]),
+        propagate=body.get("propagate", True),
+    )
+    return (
+        jsonify(
+            {
+                "transaction_id": str(transaction.id),
+                "category_id": str(transaction.category_id),
+                "category_set_by_user": transaction.category_set_by_user,
+                "also_recategorised": propagated,
             }
         ),
         200,

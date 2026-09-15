@@ -2,6 +2,7 @@ from app.models.account import Account
 from app.models.assistant import AssistantConversation, AssistantMessage
 from app.models.audit_log import AuditLog
 from app.models.category import Category
+from app.models.column_mapping import AccountColumnMapping
 from app.models.debt import Debt
 from app.models.forecast import Forecast, ForecastPeriod
 from app.models.forecast_accuracy import ForecastAccuracy
@@ -21,6 +22,7 @@ __all__ = [
     "AssistantMessage",
     "AuditLog",
     "Category",
+    "AccountColumnMapping",
     "Debt",
     "Forecast",
     "ForecastPeriod",
