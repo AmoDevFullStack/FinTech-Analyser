@@ -18,6 +18,7 @@ from app.core.db import DbSession
 from app.domain.forecast import ForecastAssumptions
 from app.models.forecast import Forecast
 from app.services.forecast import ForecastService
+from app.services.recommendation import RecommendationService
 from app.services.risk import RiskService
 
 
@@ -34,4 +35,5 @@ def generate_forecast(
     service.measure_accuracy(user_id=user_id, as_of=as_of)
     if evaluate_risk:
         RiskService(session).evaluate(user_id=user_id, as_of=as_of)
+        RecommendationService(session).evaluate(user_id=user_id, as_of=as_of)
     return forecast
