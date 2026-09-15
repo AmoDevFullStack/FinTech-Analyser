@@ -64,6 +64,10 @@ argued with, and one that cannot be argued with will not be believed.
 
 - A run writes nothing to accounts, transactions, debts, income, or goals. Structural, per
   ADR-005.
+- Baseline and scenario projections both amortise the user's existing debts across the
+  horizon (engine 1.1.0 onward). Before 1.1.0 neither side modelled debt service, which
+  cancelled out of the comparison but made both trajectories too optimistic in absolute
+  terms, and made "debt free date" mean only the scenario's own new loan.
 - Identical assumptions against an identical snapshot produce identical output, always.
 - The snapshot date is displayed wherever scenario results are shown.
 - Applying a scenario to real state is a separate endpoint requiring explicit confirmation,

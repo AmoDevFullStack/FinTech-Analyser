@@ -5,6 +5,7 @@ from app.api.v1.analysis import bp as analysis_bp
 from app.api.v1.auth import bp as auth_bp
 from app.api.v1.categories import bp as categories_bp
 from app.api.v1.debts import bp as debts_bp
+from app.api.v1.forecasts import bp as forecasts_bp
 from app.api.v1.goals import bp as goals_bp
 from app.api.v1.health import bp as health_bp
 from app.api.v1.imports import bp as imports_bp
@@ -25,6 +26,7 @@ for blueprint in (
     debts_bp,
     analysis_bp,
     goals_bp,
+    forecasts_bp,
     position_bp,
     scenarios_bp,
     risk_flags_bp,

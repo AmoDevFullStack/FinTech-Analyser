@@ -36,6 +36,14 @@ both stated in the UI as assumptions rather than facts.
 discretionary spending, cash flow, savings balance, per-debt balance via amortisation,
 emergency fund coverage in months, and net worth.
 
+Debt service is part of projected outflows. Until engine 1.1.0 it was not: projections
+subtracted only essential and discretionary spending, which overstated cash flow and
+savings by the whole monthly debt repayment for every month of the horizon. From 1.1.0
+the user's debt set is amortised across the horizon, so the instalment leaves cash flow,
+the principal component builds net worth, and the balance runs down to zero. Figures
+produced before 1.1.0 are not comparable with figures produced after it; stored forecasts
+are regenerated rather than migrated.
+
 **4. Persist** the full period series with `generated_at`, `input_snapshot_id`, the
 assumptions, and the engine version.
 

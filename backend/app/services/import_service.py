@@ -28,6 +28,7 @@ from app.repositories.category import CategoryRepository
 from app.repositories.import_batch import ImportBatchRepository
 from app.repositories.transaction import TransactionRepository
 from app.services.csv_formats import ColumnMapping, detect_format, extract_amount
+from app.services.forecast import ForecastService
 from app.services.recurrence import RecurrenceService
 
 PROBABLE_MATCH_WINDOW_DAYS = 3
@@ -224,6 +225,9 @@ class ImportService:
         self._detect_transfers(transactions)
         self._session.flush()
         RecurrenceService(self._session).apply(user_id=user_id)
+        # A new batch of transactions changes every baseline the forecast rests on.
+        # Marking stale is enough; regeneration is queued, not immediate.
+        ForecastService(self._session).mark_stale(user_id=user_id)
 
         self._batches.clear_staged(batch_id)
         batch.rows_imported = len(transactions)
