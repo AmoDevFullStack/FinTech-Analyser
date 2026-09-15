@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tokens from docs/design-system.md §2. Light only, forced — the dark variant that used
+   to live under `@media (prefers-color-scheme: dark)` is intentionally removed so the
+   app ignores the OS/browser appearance setting. This overrides design-system.md §10 and
+   ADR-007's recommended System/Light/Dark control; see docs/design-system.md §10 for the
+   guideline this deviates from. */
+:root {
+  color-scheme: light;
+  --surface: #fcfcfb;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f1f1ee;
+  --content: #17171b;
+  --content-secondary: #56565f;
+  --content-tertiary: #6f6f78;
+  --rule: #e3e3dd;
+  --rule-meaning: #8e8e87;
+  --accent: #1c3f6e;
+  --signal-caution: #8a5a00;
+  --signal-critical: #9b2c24;
+  --signal-positive: #1f5d3f;
+}
+
+body {
+  background: var(--surface);
+  color: var(--content);
+}

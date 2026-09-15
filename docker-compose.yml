@@ -1,0 +1,81 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fdt}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fdt}
+      POSTGRES_DB: ${POSTGRES_DB:-fdt}
+    # No host port published — backend/worker reach it as postgres:5432 over the
+    # compose network. A local Postgres already on 5432 must not block this stack.
+    # For a host psql client, use `docker compose exec postgres psql -U fdt`.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fdt}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    # No host port published — only backend/worker use it, over the compose network
+    # (redis:6379). A conflicting local Redis on the host must not block this stack.
+
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://fdt:fdt@postgres:5432/fdt}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+
+  worker:
+    build: ./backend
+    command: ["rq", "worker", "--url", "redis://redis:6379/0"]
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://fdt:fdt@postgres:5432/fdt}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build: ./frontend
+    env_file: .env
+    environment:
+      # Overrides vite.config.ts's host-machine default (localhost:8000) — inside this
+      # container, the backend is only reachable at its compose service name.
+      VITE_DEV_API_PROXY_TARGET: http://backend:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  postgres_data:
