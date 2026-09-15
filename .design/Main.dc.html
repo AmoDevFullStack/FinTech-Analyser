@@ -1,0 +1,248 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; }
+    a { color: #1C3F6E; } a:hover { color: #14304F; }
+    .fig { font-variant-numeric: tabular-nums; }
+    .basis { display: inline-block; border-bottom: 1px solid #8E8E87; padding-bottom: 4px; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; background: #FCFCFB; padding: 32px 40px 48px; box-sizing: border-box; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #17171B;">
+<div style="max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px;">
+
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; border-bottom: 1px solid #E3E3DD; padding-bottom: 16px;">
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <div style="font-size: 20px; font-weight: 600; line-height: 1.3;">Financial Digital Twin</div>
+      <div style="font-size: 13px; line-height: 1.4; color: #6F6F78;">Position as of 14 September 2026, 06:00</div>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <div style="display: flex; align-items: center; height: 44px; padding: 0 16px; border: 1px solid #E3E3DD; border-radius: 6px; background: #FFFFFF; font-size: 14px; font-weight: 500;">Run a scenario</div>
+      <div style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 1px solid #E3E3DD; border-radius: 6px; background: #FFFFFF;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#56565F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"></path></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1. Position -->
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    <div style="font-size: 20px; font-weight: 600; line-height: 1.3;">Position</div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;">
+
+      <div style="display: flex; flex-direction: column; gap: 8px; background: #FFFFFF; border: 1px solid #E3E3DD; border-radius: 8px; padding: 24px;">
+        <div style="font-size: 14px; font-weight: 500; line-height: 1.4; color: #56565F;">Net worth</div>
+        <div class="fig" style="font-size: 40px; font-weight: 500; line-height: 1.1;">R412 500.00</div>
+        <div style="font-size: 13px; line-height: 1.4; color: #6F6F78;">Across 6 accounts and 2 assets</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; background: #FFFFFF; border: 1px solid #E3E3DD; border-radius: 8px; padding: 24px;">
+        <div style="font-size: 14px; font-weight: 500; line-height: 1.4; color: #56565F;">Liquid savings</div>
+        <div class="fig" style="font-size: 40px; font-weight: 500; line-height: 1.1;">R48 200.00</div>
+        <div style="font-size: 13px; line-height: 1.4; color: #6F6F78;">Available without penalty</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; background: #FFFFFF; border: 1px solid #E3E3DD; border-radius: 8px; padding: 24px;">
+        <div style="font-size: 14px; font-weight: 500; line-height: 1.4; color: #56565F;">Total debt</div>
+        <div class="fig" style="font-size: 40px; font-weight: 500; line-height: 1.1;">R287 300.00</div>
+        <div style="font-size: 13px; line-height: 1.4; color: #6F6F78;">3 facilities, R6 843.41 due soonest</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 2. This month's cash flow -->
+  <div style="display: flex; flex-direction: column; gap: 16px; background: #FFFFFF; border: 1px solid #E3E3DD; border-radius: 8px; padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px;">
+      <div style="font-size: 20px; font-weight: 600; line-height: 1.3;">This month&#39;s cash flow</div>
+      <div style="font-size: 13px; line-height: 1.4; color: #6F6F78;">1&#8211;30 September &#183; Remaining projected as of 14 September</div>
+    </div>
+
+    <div style="display: flex; align-items: baseline; gap: 12px;">
+      <div class="fig" style="font-size: 28px; font-weight: 500; line-height: 1.2;">R10 800.00</div>
+      <div style="font-size: 16px; line-height: 1.5; color: #56565F;">projected to remain</div>
+    </div>
+
+    <!-- Flow bar -->
+    <div style="display: flex; gap: 4px; height: 48px; margin-top: 4px;">
+      <div style="flex-grow: 604; background: #16324F; border-radius: 4px 0 0 4px;"></div>
+      <div style="flex-grow: 188; background: #A8571B;"></div>
+      <div style="flex-grow: 208; border-radius: 0 4px 4px 0; background: repeating-linear-gradient(135deg, #3F8A8A 0, #3F8A8A 6px, #FFFFFF 6px, #FFFFFF 9px);"></div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding-top: 8px;">
+
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="width: 10px; height: 10px; border-radius: 2px; background: #17171B;"></div>
+          <div style="font-size: 14px; font-weight: 500; line-height: 1.4; color: #56565F;">Income</div>
+        </div>
+        <div class="fig" style="font-size: 20px; font-weight: 500; line-height: 1.3;">R52 000.00</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="width: 10px; height: 10px; border-radius: 2px; background: #16324F;"></div>
+          <div style="font-size: 14px; font-weight: 500; line-height: 1.4; color: #56565F;">Essential</div>
+        </div>
+        <div class="fig" style="font-size: 20px; font-weight: 500; line-height: 1.3;">R31 400.00</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="width: 10px; height: 10px; border-radius: 2px; background: #A8571B;"></div>
+          <div style="font-size: 14px; font-weight: 500; line-height: 1.4; color: #56565F;">Discretionary</div>
+        </div>
+        <div class="fig" style="font-size: 20px; font-weight: 500; line-height: 1.3;">R9 800.00</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="width: 10px; height: 10px; border-radius: 2px; background: repeating-linear-gradient(135deg, #3F8A8A 0, #3F8A8A 3px, #FFFFFF 3px, #FFFFFF 5px);"></div>
+          <div style="font-size: 14px; font-weight: 500; line-height: 1.4; color: #56565F;">Remaining</div>
+        </div>
+        <div class="fig" style="font-size: 20px; font-weight: 500; line-height: 1.3;"><span class="basis">R10 800.00</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 3 + 4 -->
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start;">
+
+    <!-- 3. What is coming -->
+    <div style="display: flex; flex-direction: column; gap: 16px; background: #FFFFFF; border: 1px solid #E3E3DD; border-radius: 8px; padding: 24px;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-size: 20px; font-weight: 600; line-height: 1.3;">What is coming</div>
+        <div style="font-size: 13px; line-height: 1.4; color: #6F6F78;">Next 30 days &#183; Projected as of 14 September 2026</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column;">
+
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 12px 0; border-bottom: 1px solid #E3E3DD;">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <div style="font-size: 16px; line-height: 1.5;">Vehicle finance</div>
+            <div style="font-size: 13px; line-height: 1.4; color: #6F6F78;">25 September</div>
+          </div>
+          <div class="fig" style="font-size: 20px; font-weight: 500; line-height: 1.3;">R6 843.41</div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 12px 0; border-bottom: 1px solid #E3E3DD;">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <div style="font-size: 16px; line-height: 1.5;">Home loan</div>
+            <div style="font-size: 13px; line-height: 1.4; color: #6F6F78;">1 October</div>
+          </div>
+          <div class="fig" style="font-size: 20px; font-weight: 500; line-height: 1.3;">R12 480.00</div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 12px 0; border-bottom: 1px solid #E3E3DD;">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <div style="font-size: 16px; line-height: 1.5;">Medical aid</div>
+            <div style="font-size: 13px; line-height: 1.4; color: #6F6F78;">1 October</div>
+          </div>
+          <div class="fig" style="font-size: 20px; font-weight: 500; line-height: 1.3;">R4 210.00</div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 12px 0;">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <div style="font-size: 16px; line-height: 1.5;">Credit card minimum</div>
+            <div style="font-size: 13px; line-height: 1.4; color: #6F6F78;">3 October</div>
+          </div>
+          <div class="fig" style="font-size: 20px; font-weight: 500; line-height: 1.3;">R1 890.00</div>
+        </div>
+
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; background: #F1F1EE; border-radius: 6px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px;">
+          <div style="font-size: 14px; font-weight: 500; line-height: 1.4; color: #56565F;">Due in 30 days</div>
+          <div class="fig" style="font-size: 20px; font-weight: 500; line-height: 1.3;">R25 423.41</div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px;">
+          <div style="font-size: 14px; font-weight: 500; line-height: 1.4; color: #56565F;">Projected available</div>
+          <div class="fig" style="font-size: 20px; font-weight: 500; line-height: 1.3;"><span class="basis">R28 600.00</span></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px solid #E3E3DD; margin-top: 4px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1F5D3F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>
+          <div style="font-size: 16px; line-height: 1.5; color: #1F5D3F;">Covered, with <span class="fig">R3 176.59</span> over</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Financial health -->
+    <div style="display: flex; flex-direction: column; gap: 16px; background: #FFFFFF; border: 1px solid #E3E3DD; border-radius: 8px; padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div style="font-size: 20px; font-weight: 600; line-height: 1.3;">Financial health</div>
+          <div style="font-size: 13px; line-height: 1.4; color: #6F6F78;">Assessed 6 September 2026</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid #8E8E87; border-radius: 4px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56565F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+          <div style="font-size: 13px; font-weight: 500; line-height: 1.4; color: #56565F;">Stale</div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: baseline; gap: 12px;">
+        <div class="fig" style="font-size: 40px; font-weight: 500; line-height: 1.1;"><span class="basis">62</span></div>
+        <div style="font-size: 16px; line-height: 1.5; color: #56565F;">of 100</div>
+        <div style="display: flex; align-items: center; gap: 4px; margin-left: 4px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F5D3F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"></path><path d="M5 12l7-7 7 7"></path></svg>
+          <div style="font-size: 14px; font-weight: 500; line-height: 1.4; color: #1F5D3F;">Up 4 since June</div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 14px; font-weight: 500; line-height: 1.4; color: #56565F;">Largest drag on the score</div>
+        <div style="font-size: 16px; line-height: 1.5;">Emergency fund covers <span class="fig">1.53</span> months of essential spending. Three months is the target.</div>
+      </div>
+
+      <div style="display: flex; gap: 8px; padding-top: 4px;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 16px; border: 1px solid #1C3F6E; border-radius: 6px; background: #1C3F6E; font-size: 14px; font-weight: 500; color: #FFFFFF;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"></path><path d="M20 4v5h-5"></path></svg>
+          Refresh assessment
+        </div>
+        <div style="display: flex; align-items: center; height: 44px; padding: 0 16px; border: 1px solid #E3E3DD; border-radius: 6px; background: #FFFFFF; font-size: 14px; font-weight: 500;">See all components</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 5. Attention -->
+  <div style="display: flex; flex-direction: column; gap: 16px; background: #FFFFFF; border: 1px solid #E3E3DD; border-radius: 8px; padding: 24px;">
+    <div style="font-size: 20px; font-weight: 600; line-height: 1.3;">Attention</div>
+
+    <div style="display: flex; gap: 12px; align-items: flex-start; border-left: 3px solid #9B2C24; padding: 4px 0 4px 16px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9B2C24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 3L2 20h20L12 3z"></path><path d="M12 9v5"></path><path d="M12 17.5v.5"></path></svg>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-size: 16px; font-weight: 500; line-height: 1.5; color: #9B2C24;">Emergency fund below one month by February</div>
+        <div style="font-size: 16px; line-height: 1.5; color: #56565F;">At current behaviour the fund reaches <span class="fig">R24 100.00</span> on <span class="fig">28 February 2027</span>, against essential spending of <span class="fig">R31 400.00</span> a month.</div>
+        <div style="font-size: 13px; line-height: 1.4; color: #6F6F78;">Projected as of 14 September 2026 &#183; emergency_fund_engine</div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 12px; align-items: flex-start; border-left: 3px solid #8A5A00; padding: 4px 0 4px 16px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8A5A00" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4.5"></path><path d="M12 16v.5"></path></svg>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-size: 16px; font-weight: 500; line-height: 1.5; color: #8A5A00;">Two large debits fall in the same week</div>
+        <div style="font-size: 16px; line-height: 1.5; color: #56565F;">Home loan and medical aid both debit on <span class="fig">1 October</span>, totalling <span class="fig">R16 690.00</span> four days after the vehicle finance instalment.</div>
+        <div style="font-size: 13px; line-height: 1.4; color: #6F6F78;">Projected as of 14 September 2026 &#183; obligation_timing_engine</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="font-size: 13px; line-height: 1.4; color: #6F6F78; border-top: 1px solid #E3E3DD; padding-top: 16px;">
+    Figures with a rule beneath them are projected from stored assumptions, not observed. Projections are not predictions.
+  </div>
+
+</div>
+</div>
+</x-dc>
+</body>
+</html>

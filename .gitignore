@@ -1,0 +1,36 @@
+# Backend
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+backend/htmlcov/
+backend/.coverage
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/playwright-report/
+frontend/test-results/
+
+# Environment
+.env
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node/tooling caches
+frontend/.vite/
+backend/.venv/**/*.pyc
+
+# Stale bootstrap artifact — content duplicated in docs/ and specs/
+files.zip
+
+# Locally installed Claude Code skills/plugins — regenerated from skills-lock.json,
+# not project source
+.claude/
+.agents/
+caveman/
