@@ -26,6 +26,7 @@ from app.domain.debt_payoff import (
 from app.models.debt import Debt, DebtType
 from app.repositories.debt import DebtRepository
 from app.services.financial_health import FinancialHealthService
+from app.services.forecast import ForecastService
 from app.services.position import PositionService
 
 DEFAULT_WHAT_IF_INCREMENTS = (Decimal("100"), Decimal("500"), Decimal("1000"))
@@ -71,6 +72,7 @@ class DebtService:
         """
         self._position.capture_snapshot(user_id=user_id)
         self._health.assess(user_id=user_id)
+        ForecastService(self._session).mark_stale(user_id=user_id)
 
     def create(self, *, user_id: UUID, data: CreateDebtInput) -> Debt:
         if data.current_balance < 0:
