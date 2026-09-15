@@ -159,3 +159,37 @@ def test_upcoming_occurrences_rolls_a_stale_series_forward_rather_than_reporting
 def test_upcoming_occurrences_rejects_a_non_positive_window() -> None:
     with pytest.raises(ValueError, match="days_ahead"):
         upcoming_occurrences([], from_date=date(2026, 3, 1), days_ahead=0)
+
+
+def test_next_occurrence_of_day_returns_today_when_today_matches() -> None:
+    from app.domain.recurrence import next_occurrence_of_day
+
+    assert next_occurrence_of_day(as_of=date(2026, 3, 25), day=25) == date(2026, 3, 25)
+
+
+def test_next_occurrence_of_day_rolls_into_the_following_month() -> None:
+    from app.domain.recurrence import next_occurrence_of_day
+
+    assert next_occurrence_of_day(as_of=date(2026, 3, 26), day=25) == date(2026, 4, 25)
+
+
+def test_next_occurrence_of_day_clamps_to_a_short_month() -> None:
+    from app.domain.recurrence import next_occurrence_of_day
+
+    # A 31st debit order is collected on the 30th in November.
+    assert next_occurrence_of_day(as_of=date(2026, 11, 1), day=31) == date(2026, 11, 30)
+    # ... and on the 28th in a non-leap February.
+    assert next_occurrence_of_day(as_of=date(2026, 2, 1), day=31) == date(2026, 2, 28)
+
+
+def test_next_occurrence_of_day_rolls_across_a_year_boundary() -> None:
+    from app.domain.recurrence import next_occurrence_of_day
+
+    assert next_occurrence_of_day(as_of=date(2026, 12, 20), day=5) == date(2027, 1, 5)
+
+
+def test_next_occurrence_of_day_rejects_an_impossible_day() -> None:
+    from app.domain.recurrence import next_occurrence_of_day
+
+    with pytest.raises(ValueError, match="day must be"):
+        next_occurrence_of_day(as_of=date(2026, 3, 1), day=32)

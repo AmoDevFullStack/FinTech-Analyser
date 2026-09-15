@@ -240,6 +240,32 @@ def detect_all(
     return sorted(series, key=lambda s: s.monthly_equivalent, reverse=True)
 
 
+def next_occurrence_of_day(*, as_of: date, day: int) -> date:
+    """The next date on or after `as_of` falling on `day` of the month.
+
+    Clamped to short months: an obligation collected on the 31st is collected on the 30th
+    in November and the 28th in a non-leap February, which is what a debit order actually
+    does.
+
+    Raises:
+        ValueError: if day is outside 1-31.
+    """
+    if not 1 <= day <= 31:
+        raise ValueError(f"day must be between 1 and 31, got {day}")
+
+    year, month = as_of.year, as_of.month
+    for _ in range(2):
+        first_of_next = (
+            date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
+        )
+        last_day = (first_of_next - date(year, month, 1)).days
+        candidate = date(year, month, min(day, last_day))
+        if candidate >= as_of:
+            return candidate
+        year, month = first_of_next.year, first_of_next.month
+    raise AssertionError("next_occurrence_of_day failed to converge within two months")
+
+
 def upcoming_occurrences(
     series: list[RecurringSeries], *, from_date: date, days_ahead: int
 ) -> list[tuple[RecurringSeries, date]]:
