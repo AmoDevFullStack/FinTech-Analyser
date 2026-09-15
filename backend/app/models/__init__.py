@@ -1,4 +1,5 @@
 from app.models.account import Account
+from app.models.assistant import AssistantConversation, AssistantMessage
 from app.models.audit_log import AuditLog
 from app.models.category import Category
 from app.models.debt import Debt
@@ -16,6 +17,8 @@ from app.models.user import User
 
 __all__ = [
     "Account",
+    "AssistantConversation",
+    "AssistantMessage",
     "AuditLog",
     "Category",
     "Debt",

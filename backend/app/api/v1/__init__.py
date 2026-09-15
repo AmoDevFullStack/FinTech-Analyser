@@ -2,6 +2,7 @@ from flask import Blueprint
 
 from app.api.v1.accounts import bp as accounts_bp
 from app.api.v1.analysis import bp as analysis_bp
+from app.api.v1.assistant import bp as assistant_bp
 from app.api.v1.auth import bp as auth_bp
 from app.api.v1.categories import bp as categories_bp
 from app.api.v1.debts import bp as debts_bp
@@ -32,6 +33,7 @@ for blueprint in (
     scenarios_bp,
     risk_flags_bp,
     recommendations_bp,
+    assistant_bp,
     health_bp,
     operational_bp,
 ):
