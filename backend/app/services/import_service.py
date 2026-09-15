@@ -28,6 +28,7 @@ from app.repositories.category import CategoryRepository
 from app.repositories.import_batch import ImportBatchRepository
 from app.repositories.transaction import TransactionRepository
 from app.services.csv_formats import ColumnMapping, detect_format, extract_amount
+from app.services.recurrence import RecurrenceService
 
 PROBABLE_MATCH_WINDOW_DAYS = 3
 PROBABLE_MATCH_THRESHOLD = 0.8
@@ -221,7 +222,8 @@ class ImportService:
         ]
         self._transactions.add_all(transactions)
         self._detect_transfers(transactions)
-        self._detect_recurrence(user_id, transactions)
+        self._session.flush()
+        RecurrenceService(self._session).apply(user_id=user_id)
 
         self._batches.clear_staged(batch_id)
         batch.rows_imported = len(transactions)
@@ -325,28 +327,6 @@ class ImportService:
                     outflow.transfer_group_id = group_id
                     inflow.transfer_group_id = group_id
                     break
-
-    def _detect_recurrence(
-        self, user_id: UUID, transactions: list[Transaction]
-    ) -> None:
-        from collections import defaultdict
-        from uuid import uuid4
-
-        history = self._transactions.for_user(user_id=user_id, limit=10_000)
-        by_description: dict[str, list[Transaction]] = defaultdict(list)
-        for txn in history:
-            by_description[txn.normalised_description].append(txn)
-
-        for description, group in by_description.items():
-            if len(group) < 3:
-                continue
-            group_id = next(
-                (t.recurrence_group_id for t in group if t.recurrence_group_id), uuid4()
-            )
-            for txn in group:
-                txn.is_recurring = True
-                txn.recurrence_group_id = group_id
-
 
 def _categorise(
     normalised_description: str, categories: list[Category]
