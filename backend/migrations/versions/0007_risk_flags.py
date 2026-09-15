@@ -15,7 +15,7 @@ branch_labels = None
 depends_on = None
 
 RISK_STATUS_ENUM = postgresql.ENUM(
-    "active", "acknowledged", "dismissed", "resolved", name="risk_status_enum"
+    "active", "acknowledged", "dismissed", "resolved", name="risk_status_enum", create_type=False
 )
 
 
