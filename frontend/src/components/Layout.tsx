@@ -8,7 +8,12 @@ const NAV_ITEMS = [
   { to: "/", label: "Dashboard" },
   { to: "/accounts", label: "Accounts" },
   { to: "/transactions", label: "Transactions" },
+  { to: "/debts", label: "Debts" },
+  { to: "/goals", label: "Goals" },
+  { to: "/forecast", label: "Forecast" },
   { to: "/scenarios", label: "Scenarios" },
+  { to: "/worth-knowing", label: "Worth knowing" },
+  { to: "/ask", label: "Ask" },
 ];
 
 export function Layout() {
@@ -18,7 +23,7 @@ export function Layout() {
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-8 px-6 py-8 font-ui text-content">
       <header className="flex items-center justify-between gap-6 border-b border-rule pb-4">
-        <nav className="flex gap-6">
+        <nav className="flex flex-wrap gap-x-6 gap-y-2">
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}

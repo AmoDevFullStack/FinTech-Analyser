@@ -55,28 +55,53 @@ The thinnest path that proves the thesis.
 
 ---
 
-## Next
+## Next — complete
 
-Breadth on a foundation that has been proven.
+Every item in this section is built. What each one landed as:
 
-- Remaining bank CSV formats, probable-duplicate conflict resolution, column mapping
-- Similarity-based categorisation learning from corrections
-- Recurrence detection
-- ~~Debts: full schedules, strategy comparison, what-if~~ — built: `Debt` model
-  (migration 0005), `app/domain/debt_payoff.py` (avalanche/snowball/consolidation,
-  what-if), `/api/v1/debts` including `/schedule`, `/what-if`, `/strategies`. Financial
-  health's debt-burden component now uses real minimum payments once a Debt exists.
-  Remaining: frontend UI, and wiring debt due dates into the dashboard's upcoming-
-  obligations region (blocked on recurrence detection, above).
-- Goals: progress, achievability, competition
-- ~~Financial health engine with component breakdown~~ — built: `app/domain/financial_health.py`,
-  `HealthAssessment` model/migration, `/api/v1` health endpoint, dashboard `HealthRegion`.
-- Risk detection, all six types
-- Remaining scenario types
-- Forecast accuracy measurement
-- AI CFO: intent classification, context assembly, narration, unsupported path
-- Recommendations engine
-- Frontend build-out against the design system
+- **Bank CSV formats, probable-duplicate resolution, column mapping.** Detectors for all
+  seven banks in `specs/transactions.md`; merge resolution updates the existing row rather
+  than inserting; `AccountColumnMapping` (0011) remembers a manual mapping per account.
+  The five detectors beyond FNB and SBSA are built from documented column names and are
+  **not validated against a real export** — see the module docstring.
+- **Similarity-based categorisation learning.** `app/services/categorisation.py`: rules,
+  then similarity against the user's own corrections, then a low-confidence default.
+  `POST /categories/corrections` learns from a correction immediately.
+- **Recurrence detection.** `app/domain/recurrence.py` — interval regularity and amount
+  stability, a frequency, and projected upcoming occurrences. `GET /analysis/recurring`.
+- **Debts.** `Debt` (0005), `app/domain/debt_payoff.py` (avalanche, snowball,
+  consolidation, what-if), `/api/v1/debts`. Health's debt-burden component uses real
+  minimum payments.
+- **Goals.** `app/domain/goals.py` (required contribution, observed rate, achievability,
+  competition), `Goal`/`GoalContribution` (0006), `/api/v1/goals`.
+- **Financial health engine.** `app/domain/financial_health.py`, `HealthAssessment` (0004).
+- **Risk detection, all six types.** `app/domain/risk.py`, `RiskFlag` (0007) with a
+  NOT NULL computation reference, 30-day dismissal suppression, `/api/v1/risk-flags`.
+- **Remaining scenario types.** `app/domain/scenarios.py` covers all seven.
+- **Forecast accuracy measurement.** `app/domain/forecast.py` (medians, growth,
+  low-confidence labelling) and `app/domain/accuracy.py` (signed error, persistent bias),
+  `ForecastAccuracy` (0008), `/api/v1/forecasts`.
+- **AI CFO.** Deterministic intent classification in `app/llm/intent.py`, a whitelist
+  prompt contract, an explicit unsupported path, conversation transcript (0010), and a
+  structural test that no model output can reach a financial column.
+- **Recommendations engine.** All seven rules in `app/domain/recommendations.py`,
+  `Recommendation` (0009), ranked, capped at five, 60-day dismissal.
+- **Frontend build-out.** Pages for debts, goals, forecast and accuracy, worth-knowing
+  (risk flags and recommendations), and ask; the dashboard's attention region now renders
+  real flags.
+
+### Known gaps in what was built
+
+Stated rather than left to be discovered:
+
+- The five added CSV detectors need validating against real exports.
+- `POST /forecasts/refresh` computes synchronously and returns 201 rather than queueing
+  and returning 202 as `docs/api.md` specifies; no queue worker is wired to the API.
+- Scenario `apply` (writing a scenario to real state, with confirmation and an audit
+  record) is specified but not built.
+- The database-backed test suite has never been executed: no Postgres was available in
+  the environment this was built in. The domain and unit suites pass; the repository and
+  service suites error on connection.
 
 ---
 
