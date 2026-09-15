@@ -10,6 +10,11 @@ services:
     # For a host psql client, use `docker compose exec postgres psql -U fdt`.
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Creates <POSTGRES_DB>_test on first initialisation, so the test suite has a
+      # database it is allowed to drop tables in. Only runs against an empty data
+      # directory; an existing stack needs `docker compose exec postgres createdb -U fdt
+      # fdt_test` once.
+      - ./infrastructure/docker/postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fdt}"]
       interval: 5s
