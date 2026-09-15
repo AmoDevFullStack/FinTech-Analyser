@@ -3,6 +3,7 @@ from app.models.audit_log import AuditLog
 from app.models.category import Category
 from app.models.debt import Debt
 from app.models.forecast import Forecast, ForecastPeriod
+from app.models.goal import Goal, GoalContribution
 from app.models.health_assessment import HealthAssessment
 from app.models.import_batch import ImportBatch, StagedTransaction
 from app.models.position_snapshot import PositionSnapshot
@@ -17,6 +18,8 @@ __all__ = [
     "Debt",
     "Forecast",
     "ForecastPeriod",
+    "Goal",
+    "GoalContribution",
     "HealthAssessment",
     "ImportBatch",
     "StagedTransaction",
