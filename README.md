@@ -141,15 +141,22 @@ financial-digital-twin/
 
 ## Status
 
-The vertical slice from `PLAN.md`'s "Now" section exists: `backend/` and `frontend/`
-implement Foundation, the financial core engines, CSV import, and the vehicle-purchase
-scenario end to end. Two "Next" items are also built ahead of schedule: financial health
-scoring, and debts (the `Debt` model, amortisation/avalanche/snowball/consolidation
-schedules, and the `/api/v1/debts` endpoints) — see `PLAN.md`'s "Next" for exactly what's
-built versus what still isn't. Breadth beyond the "Now" slice — goals, risk detection, the
-AI CFO, scenario `apply` — is deliberately not built yet; see `PLAN.md`'s "Next" and
-"Later" for what comes after. `docs/` and `specs/` remain the source of truth the code was
-built against.
+Both the "Now" and "Next" sections of `PLAN.md` are built: Foundation, the financial
+core engines, CSV import across seven bank formats, all seven scenario types, debts,
+goals, financial health, risk detection, behavioural forecasting with accuracy
+measurement, recommendations, the AI CFO, and the frontend for all of it.
+
+Three things are specified and deliberately not built: scenario `apply` (writing a
+scenario to real financial state), the queued 202 path for forecast refresh, and
+everything in `PLAN.md`'s "Later" section. `PLAN.md` also lists the known gaps in what
+*is* built — read that before trusting a figure in production.
+
+One caveat worth stating plainly: the database-backed test suite has never run. No
+Postgres was available in the environment this was built in, so the domain and unit
+suites (220 tests) pass while every repository and service test errors on connection.
+Run `docker compose exec backend pytest` before believing any of it works end to end.
+
+`docs/` and `specs/` remain the source of truth the code was built against.
 
 ---
 

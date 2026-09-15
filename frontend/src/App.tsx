@@ -5,9 +5,15 @@ import { useCurrentUser } from "@/api/auth";
 import { Layout } from "@/components/Layout";
 import { EmptyState } from "@/components/EmptyState";
 import { Accounts } from "@/pages/Accounts";
+import { Assistant } from "@/pages/Assistant";
 import { Dashboard } from "@/pages/Dashboard";
+import { DebtDetail } from "@/pages/DebtDetail";
+import { Debts } from "@/pages/Debts";
+import { Forecast } from "@/pages/Forecast";
+import { Goals } from "@/pages/Goals";
 import { Health } from "@/pages/Health";
 import { Login } from "@/pages/Login";
+import { Recommendations } from "@/pages/Recommendations";
 import { Register } from "@/pages/Register";
 import { ScenarioDetail } from "@/pages/ScenarioDetail";
 import { Scenarios } from "@/pages/Scenarios";
@@ -37,6 +43,12 @@ export function App() {
         <Route path="/health" element={<Health />} />
         <Route path="/accounts" element={<Accounts />} />
         <Route path="/transactions" element={<Transactions />} />
+        <Route path="/debts" element={<Debts />} />
+        <Route path="/debts/:debtId" element={<DebtDetail />} />
+        <Route path="/goals" element={<Goals />} />
+        <Route path="/forecast" element={<Forecast />} />
+        <Route path="/worth-knowing" element={<Recommendations />} />
+        <Route path="/ask" element={<Assistant />} />
         <Route path="/scenarios" element={<Scenarios />} />
         <Route path="/scenarios/:scenarioId" element={<ScenarioDetail />} />
       </Route>

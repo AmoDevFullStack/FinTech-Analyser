@@ -145,3 +145,213 @@ export interface VehiclePurchaseAssumptions {
   maintenance_monthly?: string;
   trade_in_value?: string;
 }
+
+export type DebtType =
+  | "credit_card"
+  | "personal_loan"
+  | "vehicle"
+  | "home_loan"
+  | "store_account"
+  | "other";
+
+export interface Debt {
+  id: string;
+  account_id: string | null;
+  debt_type: DebtType;
+  original_principal: Money;
+  current_balance: Money;
+  annual_rate: Rate;
+  minimum_payment: Money;
+  instalment: Money | null;
+  term_months: number | null;
+  started_on: string;
+}
+
+export interface SchedulePeriod {
+  period: number;
+  opening_balance: Money;
+  instalment: Money;
+  interest: Money;
+  principal: Money;
+  closing_balance: Money;
+}
+
+export interface WhatIfRow {
+  extra_monthly: Money;
+  months_to_free: number;
+  total_interest: Money;
+  months_saved: number;
+  interest_saved: Money;
+}
+
+export interface StrategyResult {
+  strategy: string;
+  months_to_free: number;
+  total_interest: Money;
+  payoff_month_by_debt_id: Record<string, number>;
+  schedule: {
+    month: number;
+    total_balance: Money;
+    interest: Money;
+    principal: Money;
+    payment: Money;
+  }[];
+}
+
+export interface StrategyComparison {
+  avalanche: StrategyResult;
+  snowball: StrategyResult;
+  consolidation: StrategyResult | null;
+  interest_difference_avalanche_vs_snowball: Money;
+  months_difference_avalanche_vs_snowball: number;
+  difference_is_material: boolean;
+}
+
+export interface Goal {
+  id: string;
+  name: string;
+  account_id: string | null;
+  target_amount: Money;
+  target_date: string;
+  priority: number;
+  planned_monthly_contribution: Money | null;
+}
+
+export interface GoalProgress {
+  goal: Goal;
+  current_amount: Money;
+  target_amount: Money;
+  progress_source: "linked_account" | "contributions" | "none";
+  months_remaining: number;
+  required_monthly_contribution: Money;
+  observed_monthly_rate: Money;
+  projected_months: number | null;
+  projected_achievement_date: string | null;
+  is_achievable: boolean;
+  monthly_shortfall: Money;
+  date_slippage_months: number | null;
+  annual_rate: Rate;
+}
+
+export interface FundingPlan {
+  total_required: Money;
+  available_cash_flow: Money;
+  is_over_committed: boolean;
+  fundings: {
+    goal_id: string;
+    priority: number;
+    required_monthly: Money;
+    funded_monthly: Money;
+    is_fully_funded: boolean;
+    slippage_months: number | null;
+  }[];
+}
+
+export type RiskSeverity = "low" | "medium" | "high" | "critical";
+
+export interface RiskFlag {
+  id: string;
+  risk_type: string;
+  severity: RiskSeverity;
+  status: "active" | "acknowledged" | "dismissed" | "resolved";
+  detected_on: string;
+  projected_date: string | null;
+  quantified_amount: Money;
+  explanation: string;
+  computation_reference: string;
+  details: Record<string, string>;
+}
+
+export interface RecommendationRow {
+  id: string;
+  rule_id: string;
+  status: "active" | "dismissed" | "acted_on";
+  benefit_amount: Money;
+  benefit_kind: string;
+  explanation: string;
+  computation_reference: string;
+  details: Record<string, string>;
+  generated_on: string;
+}
+
+export interface ForecastPeriodRow {
+  period_index: number;
+  month: string;
+  projected_income: Money;
+  projected_expenses: Money;
+  cash_flow: Money;
+  savings_balance: Money;
+  debt_balance: Money;
+  emergency_fund_months: Rate;
+  net_worth: Money;
+}
+
+export interface ForecastResponse {
+  id: string;
+  horizon_months: number;
+  generated_at: string;
+  is_stale: boolean;
+  engine_version: string;
+  input_snapshot_id: string;
+  assumptions: Record<string, string>;
+  is_low_confidence: boolean;
+  months_observed: number;
+  periods: ForecastPeriodRow[];
+}
+
+export interface AccuracySummaryRow {
+  metric: string;
+  months_measured: number;
+  mean_absolute_error: Money;
+  mean_percentage_error: Rate | null;
+  has_persistent_bias: boolean;
+  bias_direction: string | null;
+  suggested_adjustment: Money;
+}
+
+export interface AccuracyResponse {
+  measurements: {
+    month: string;
+    metric: string;
+    projected: Money;
+    actual: Money;
+    absolute_error: Money;
+    signed_error: Money;
+    percentage_error: Rate | null;
+    engine_version: string;
+  }[];
+  summaries: AccuracySummaryRow[];
+}
+
+export interface AssistantFigure {
+  label: string;
+  value: string;
+  unit: string;
+  source: string;
+  result_id: string | null;
+}
+
+export interface AssistantAnswer {
+  supported: boolean;
+  answer: string | null;
+  narration_available: boolean;
+  figures: AssistantFigure[];
+  based_on: { period?: string; assumptions?: Record<string, string> };
+  clarification: string | null;
+  capability: string;
+  conversation_id: string | null;
+}
+
+export interface RecurringSeriesRow {
+  key: string;
+  frequency: string;
+  median_amount: Money;
+  monthly_equivalent: Money;
+  annual_cost: Money;
+  occurrence_count: number;
+  first_seen: string;
+  last_seen: string;
+  next_expected_on: string;
+  category_id: string | null;
+  category_kind: string | null;
+}

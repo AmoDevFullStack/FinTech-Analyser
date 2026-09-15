@@ -23,6 +23,20 @@ def _decimal(body: dict, key: str) -> Decimal | None:
     return Decimal(str(value)) if value is not None else None
 
 
+def _int(body: dict, key: str) -> int | None:
+    """Coerce at the boundary: the client sends whatever its form produced, and this is
+    where a value becomes typed. The frontend is forbidden from narrowing strings to
+    numbers itself (docs/frontend.md §4), so it sends them as-is.
+    """
+    value = body.get(key)
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError(f"'{key}' must be a whole number.") from exc
+
+
 @bp.get("")
 @require_auth
 def list_debts():
@@ -55,7 +69,7 @@ def create_debt():
             started_on=date.fromisoformat(body["started_on"]),
             account_id=body.get("account_id"),
             instalment=_decimal(body, "instalment"),
-            term_months=body.get("term_months"),
+            term_months=_int(body, "term_months"),
         ),
     )
     return jsonify(debt_dict(debt)), 201
@@ -83,7 +97,7 @@ def update_debt(debt_id):
             annual_rate=_decimal(body, "annual_rate"),
             minimum_payment=_decimal(body, "minimum_payment"),
             instalment=_decimal(body, "instalment"),
-            term_months=body.get("term_months"),
+            term_months=_int(body, "term_months"),
         ),
     )
     return jsonify(debt_dict(debt)), 200

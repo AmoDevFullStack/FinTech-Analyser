@@ -49,7 +49,7 @@ export function Dashboard() {
         <UpcomingRegion position={position} />
         <HealthRegion position={position} />
       </div>
-      <AttentionRegion position={position} />
+      <AttentionRegion />
     </div>
   );
 }
