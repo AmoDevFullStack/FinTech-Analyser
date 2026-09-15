@@ -3,6 +3,7 @@ from flask import Blueprint
 from app.api.v1.accounts import bp as accounts_bp
 from app.api.v1.auth import bp as auth_bp
 from app.api.v1.categories import bp as categories_bp
+from app.api.v1.debts import bp as debts_bp
 from app.api.v1.health import bp as health_bp
 from app.api.v1.imports import bp as imports_bp
 from app.api.v1.operational import bp as operational_bp
@@ -18,6 +19,7 @@ for blueprint in (
     transactions_bp,
     imports_bp,
     categories_bp,
+    debts_bp,
     position_bp,
     scenarios_bp,
     health_bp,

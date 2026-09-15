@@ -143,10 +143,13 @@ financial-digital-twin/
 
 The vertical slice from `PLAN.md`'s "Now" section exists: `backend/` and `frontend/`
 implement Foundation, the financial core engines, CSV import, and the vehicle-purchase
-scenario end to end. Breadth beyond that slice — goals, full debt strategies, financial
-health scoring, risk detection, the AI CFO, scenario `apply` — is deliberately not built
-yet; see `PLAN.md`'s "Next" and "Later" for what comes after. `docs/` and `specs/` remain
-the source of truth the code was built against.
+scenario end to end. Two "Next" items are also built ahead of schedule: financial health
+scoring, and debts (the `Debt` model, amortisation/avalanche/snowball/consolidation
+schedules, and the `/api/v1/debts` endpoints) — see `PLAN.md`'s "Next" for exactly what's
+built versus what still isn't. Breadth beyond the "Now" slice — goals, risk detection, the
+AI CFO, scenario `apply` — is deliberately not built yet; see `PLAN.md`'s "Next" and
+"Later" for what comes after. `docs/` and `specs/` remain the source of truth the code was
+built against.
 
 ---
 

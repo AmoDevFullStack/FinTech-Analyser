@@ -62,9 +62,15 @@ Breadth on a foundation that has been proven.
 - Remaining bank CSV formats, probable-duplicate conflict resolution, column mapping
 - Similarity-based categorisation learning from corrections
 - Recurrence detection
-- Debts: full schedules, strategy comparison, what-if
+- ~~Debts: full schedules, strategy comparison, what-if~~ — built: `Debt` model
+  (migration 0005), `app/domain/debt_payoff.py` (avalanche/snowball/consolidation,
+  what-if), `/api/v1/debts` including `/schedule`, `/what-if`, `/strategies`. Financial
+  health's debt-burden component now uses real minimum payments once a Debt exists.
+  Remaining: frontend UI, and wiring debt due dates into the dashboard's upcoming-
+  obligations region (blocked on recurrence detection, above).
 - Goals: progress, achievability, competition
-- Financial health engine with component breakdown
+- ~~Financial health engine with component breakdown~~ — built: `app/domain/financial_health.py`,
+  `HealthAssessment` model/migration, `/api/v1` health endpoint, dashboard `HealthRegion`.
 - Risk detection, all six types
 - Remaining scenario types
 - Forecast accuracy measurement
