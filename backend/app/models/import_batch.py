@@ -39,6 +39,7 @@ class ImportBatch(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     rows_imported: Mapped[int] = mapped_column(nullable=False, default=0)
     rows_skipped_duplicate: Mapped[int] = mapped_column(nullable=False, default=0)
     rows_pending_conflict: Mapped[int] = mapped_column(nullable=False, default=0)
+    rows_merged: Mapped[int] = mapped_column(nullable=False, default=0)
 
 
 class StagedTransaction(UUIDPrimaryKeyMixin, Base):

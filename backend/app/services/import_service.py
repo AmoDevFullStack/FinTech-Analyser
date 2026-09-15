@@ -20,13 +20,15 @@ from uuid import UUID
 from app.core.db import DbSession
 
 from app.core.errors import NotFoundError, SemanticError, ValidationError
-from app.models.category import Category, CategoryKind
+from app.models.category import Category
 from app.models.import_batch import ImportBatch, ImportStatus, StagedTransaction
 from app.models.transaction import Direction, Transaction
 from app.repositories.account import AccountRepository
 from app.repositories.category import CategoryRepository
 from app.repositories.import_batch import ImportBatchRepository
 from app.repositories.transaction import TransactionRepository
+from app.repositories.column_mapping import ColumnMappingRepository
+from app.services.categorisation import CategorisationService
 from app.services.csv_formats import ColumnMapping, detect_format, extract_amount
 from app.services.forecast import ForecastService
 from app.services.recurrence import RecurrenceService
@@ -62,6 +64,7 @@ class ImportSummary:
     rows_imported: int
     rows_skipped_duplicate: int
     rows_pending_conflict: int
+    rows_merged: int = 0
 
 
 class ImportService:
@@ -71,6 +74,8 @@ class ImportService:
         self._transactions = TransactionRepository(session)
         self._categories = CategoryRepository(session)
         self._batches = ImportBatchRepository(session)
+        self._mappings = ColumnMappingRepository(session)
+        self._categorisation = CategorisationService(session)
 
     def stage_csv(
         self,
@@ -89,14 +94,37 @@ class ImportService:
         header = list(reader.fieldnames or [])
 
         detected_name = None
-        if mapping is None:
+        if mapping is not None:
+            # An explicitly supplied mapping is remembered for this account, so the next
+            # import of the same export shape needs no mapping step at all.
+            detected_name = "manual"
+            self._mappings.remember(
+                user_id=user_id,
+                account_id=account_id,
+                mapping=_mapping_to_dict(mapping),
+                label="manual",
+            )
+        else:
             detected = detect_format(header)
-            if detected is None:
-                raise ValidationError(
-                    "Could not detect a known bank format. Provide a column mapping.",
-                    details={"header": header},
-                )
-            detected_name, mapping = detected
+            if detected is not None:
+                detected_name, mapping = detected
+            else:
+                remembered = self._mappings.for_account(account_id, user_id=user_id)
+                if remembered is None:
+                    raise ValidationError(
+                        "Could not detect a known bank format. Provide a column mapping.",
+                        details={"header": header},
+                    )
+                mapping = _mapping_from_dict(remembered.mapping)
+                detected_name = remembered.label or "remembered"
+                missing = [
+                    column for column in _mapping_columns(mapping) if column not in header
+                ]
+                if missing:
+                    raise ValidationError(
+                        "The mapping remembered for this account does not fit this file.",
+                        details={"header": header, "missing_columns": missing},
+                    )
 
         batch = ImportBatch(
             user_id=user_id,
@@ -211,13 +239,21 @@ class ImportService:
         importable = [
             r
             for r in staged_rows
-            if not r.is_exact_duplicate and r.resolution != "skip"
+            if not r.is_exact_duplicate and r.resolution not in ("skip", "merge")
         ]
+        merged = self._apply_merges(
+            [r for r in staged_rows if r.resolution == "merge"], user_id=user_id
+        )
 
         categories = self._categories.list_for_user(user_id=user_id)
+        corrections = self._categorisation.corrected_history(user_id=user_id)
         transactions = [
             self._build_transaction(
-                row, batch=batch, user_id=user_id, categories=categories
+                row,
+                batch=batch,
+                user_id=user_id,
+                categories=categories,
+                corrections=corrections,
             )
             for row in importable
         ]
@@ -231,6 +267,7 @@ class ImportService:
 
         self._batches.clear_staged(batch_id)
         batch.rows_imported = len(transactions)
+        batch.rows_merged = merged
         batch.status = ImportStatus.COMMITTED
         self._session.commit()
 
@@ -241,6 +278,7 @@ class ImportService:
             rows_imported=batch.rows_imported,
             rows_skipped_duplicate=batch.rows_skipped_duplicate,
             rows_pending_conflict=0,
+            rows_merged=merged,
         )
 
     def undo(self, batch_id: UUID, *, user_id: UUID) -> int:
@@ -261,6 +299,35 @@ class ImportService:
         self._session.commit()
         return len(undone)
 
+    def _apply_merges(self, rows: list[StagedTransaction], *, user_id: UUID) -> int:
+        """Resolve a probable duplicate by updating the existing row in place.
+
+        Merge means "this is the same transaction, and the imported version is the better
+        record of it" — a re-export with a corrected posting date or a fuller description.
+        It updates rather than inserting, so the resolution the user chose never produces
+        the duplicate they were asked about.
+        """
+        merged = 0
+        if not rows:
+            return merged
+
+        history = {
+            t.id: t for t in self._transactions.for_user(user_id=user_id, limit=100_000)
+        }
+        for row in rows:
+            if row.conflict_candidate_id is None:
+                continue
+            existing = history.get(row.conflict_candidate_id)
+            if existing is None:
+                continue
+            existing.occurred_on = row.occurred_on
+            existing.amount = row.amount
+            existing.description = row.description
+            existing.normalised_description = row.normalised_description
+            existing.fingerprint = row.fingerprint
+            merged += 1
+        return merged
+
     def _build_transaction(
         self,
         row: StagedTransaction,
@@ -268,18 +335,23 @@ class ImportService:
         batch: ImportBatch,
         user_id: UUID,
         categories: list[Category],
+        corrections: dict[str, UUID] | None = None,
     ) -> Transaction:
-        category = _categorise(row.normalised_description, categories)
+        suggestion = self._categorisation.suggest(
+            normalised_description=row.normalised_description,
+            categories=categories,
+            corrections=corrections or {},
+        )
         return Transaction(
             user_id=user_id,
             account_id=batch.account_id,
-            category_id=category.id if category else None,
+            category_id=suggestion.category.id if suggestion.category else None,
             occurred_on=row.occurred_on,
             amount=row.amount,
             description=row.description,
             normalised_description=row.normalised_description,
             direction=Direction.CREDIT if row.amount >= 0 else Direction.DEBIT,
-            category_confidence=Decimal("0.500000") if category else None,
+            category_confidence=suggestion.confidence if suggestion.category else None,
             category_set_by_user=False,
             import_batch_id=batch.id,
             fingerprint=row.fingerprint,
@@ -332,13 +404,41 @@ class ImportService:
                     inflow.transfer_group_id = group_id
                     break
 
-def _categorise(
-    normalised_description: str, categories: list[Category]
-) -> Category | None:
-    for category in categories:
-        if category.name.lower() in normalised_description:
-            return category
-    return next((c for c in categories if c.kind == CategoryKind.DISCRETIONARY), None)
+def _mapping_to_dict(mapping: ColumnMapping) -> dict[str, str | None]:
+    return {
+        "date_column": mapping.date_column,
+        "description_column": mapping.description_column,
+        "balance_column": mapping.balance_column,
+        "amount_column": mapping.amount_column,
+        "debit_column": mapping.debit_column,
+        "credit_column": mapping.credit_column,
+    }
+
+
+def _mapping_from_dict(raw: dict) -> ColumnMapping:
+    return ColumnMapping(
+        date_column=raw["date_column"],
+        description_column=raw["description_column"],
+        balance_column=raw.get("balance_column"),
+        amount_column=raw.get("amount_column"),
+        debit_column=raw.get("debit_column"),
+        credit_column=raw.get("credit_column"),
+    )
+
+
+def _mapping_columns(mapping: ColumnMapping) -> list[str]:
+    """Every column the mapping requires the file to contain."""
+    return [
+        column
+        for column in (
+            mapping.date_column,
+            mapping.description_column,
+            mapping.amount_column,
+            mapping.debit_column,
+            mapping.credit_column,
+        )
+        if column is not None
+    ]
 
 
 def _parse_date(raw: str) -> date:
