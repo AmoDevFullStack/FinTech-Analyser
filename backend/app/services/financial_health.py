@@ -24,6 +24,7 @@ from app.models.account import Account, AccountType
 from app.models.category import CategoryKind
 from app.models.health_assessment import HealthAssessment
 from app.repositories.account import AccountRepository
+from app.repositories.debt import DebtRepository
 from app.repositories.health_assessment import HealthAssessmentRepository
 from app.services.position import PositionService
 
@@ -53,6 +54,7 @@ class FinancialHealthService:
     def __init__(self, session: DbSession) -> None:
         self._session = session
         self._accounts = AccountRepository(session)
+        self._debts = DebtRepository(session)
         self._assessments = HealthAssessmentRepository(session)
         self._position = PositionService(session)
 
@@ -72,7 +74,9 @@ class FinancialHealthService:
         )
 
         dti = self._debt_to_income_ratio(
-            monthly_debt_service=current_sums[CategoryKind.DEBT],
+            monthly_debt_service=self._monthly_debt_service(
+                user_id=user_id, transaction_derived=current_sums[CategoryKind.DEBT]
+            ),
             monthly_income=position.monthly_income,
         )
         margin = self._cash_flow_margin(position)
@@ -114,6 +118,18 @@ class FinancialHealthService:
         self._assessments.add(assessment)
         self._session.commit()
         return assessment
+
+    def _monthly_debt_service(self, *, user_id: UUID, transaction_derived: Decimal) -> Decimal:
+        """Sum of every active `Debt`'s minimum payment where any exist; contractual
+        minimums are a truer monthly debt service than transaction categorisation, which
+        only sees what was actually paid — a missed or partial payment would understate
+        the burden. Falls back to the category-derived sum for a user with no `Debt`
+        records yet (see PositionService's module docstring for why that fallback exists).
+        """
+        debts = self._debts.list_for_user(user_id=user_id)
+        if not debts:
+            return transaction_derived
+        return sum((d.minimum_payment for d in debts), Decimal("0"))
 
     def _debt_to_income_ratio(
         self, *, monthly_debt_service: Decimal, monthly_income: Decimal

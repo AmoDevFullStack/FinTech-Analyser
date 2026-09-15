@@ -1,6 +1,7 @@
 from app.models.account import Account
 from app.models.audit_log import AuditLog
 from app.models.category import Category
+from app.models.debt import Debt
 from app.models.forecast import Forecast, ForecastPeriod
 from app.models.health_assessment import HealthAssessment
 from app.models.import_batch import ImportBatch, StagedTransaction
@@ -13,6 +14,7 @@ __all__ = [
     "Account",
     "AuditLog",
     "Category",
+    "Debt",
     "Forecast",
     "ForecastPeriod",
     "HealthAssessment",

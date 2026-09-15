@@ -199,15 +199,24 @@ Debt analysis:
 
 ```
 GET    /debts/{id}/schedule?extra_monthly=
-GET    /debts/strategies
+GET    /debts/{id}/what-if?increments=100,500,1000
+GET    /debts/strategies?total_monthly=&consolidation_rate=&consolidation_fee=
 ```
 
 `GET /debts/{id}/schedule` returns the full amortisation, computed synchronously — it is
-fast and deterministic.
+fast and deterministic. A debt with a `term_months` uses the fixed-term engine (the
+instalment is solved); a debt with none (a credit card or store account) is driven by its
+`instalment` where set, its `minimum_payment` otherwise.
 
-`GET /debts/strategies` compares avalanche, snowball, and consolidation across the user's
-debt set, returning total cost, months to free, and the crossover conditions under which
-the ranking changes.
+`GET /debts/{id}/what-if` returns, for each increment in `increments` (default
+100/500/1000), the months and interest saved against that same debt's baseline
+(`extra_monthly=0`) schedule.
+
+`GET /debts/strategies` compares avalanche and snowball across the user's whole debt set,
+plus consolidation when `consolidation_rate` is supplied, returning total interest, months
+to free, and the monthly schedule for each. `total_monthly` defaults to the sum of every
+debt's minimum payment when omitted. The response states the avalanche-versus-snowball
+difference in rand and in months, and whether that difference is material.
 
 ---
 
