@@ -10,6 +10,7 @@ from app.api.v1.health import bp as health_bp
 from app.api.v1.imports import bp as imports_bp
 from app.api.v1.operational import bp as operational_bp
 from app.api.v1.position import bp as position_bp
+from app.api.v1.risk_flags import bp as risk_flags_bp
 from app.api.v1.scenarios import bp as scenarios_bp
 from app.api.v1.transactions import bp as transactions_bp
 
@@ -26,6 +27,7 @@ for blueprint in (
     goals_bp,
     position_bp,
     scenarios_bp,
+    risk_flags_bp,
     health_bp,
     operational_bp,
 ):

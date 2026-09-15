@@ -18,7 +18,7 @@ states — this is the degrade path `specs/dashboard.md` itself specifies, not a
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
@@ -29,6 +29,7 @@ from app.domain.cash_flow import cash_flow_summary
 from app.domain.emergency_fund import emergency_fund_months
 from app.domain.net_worth import net_worth
 from app.domain.projection import FinancialPosition
+from app.domain.recurrence import next_occurrence_of_day
 from app.models.account import Account, AccountType
 from app.models.category import CategoryKind
 from app.models.position_snapshot import PositionSnapshot
@@ -36,7 +37,10 @@ from app.repositories.account import AccountRepository
 from app.repositories.category import CategoryRepository
 from app.repositories.health_assessment import HealthAssessmentRepository
 from app.repositories.position_snapshot import PositionSnapshotRepository
+from app.repositories.risk_flag import RiskFlagRepository
 from app.repositories.transaction import TransactionRepository
+
+UPCOMING_WINDOW_DAYS = 30  # specs/dashboard.md region 3: "the next 30 days"
 
 LIQUID_TYPES = {AccountType.TRANSACTIONAL, AccountType.SAVINGS}
 ASSET_TYPES = {
@@ -153,13 +157,52 @@ class PositionService:
                 # (specs/financial-health.md) independent of when a position was captured.
                 "projected_cash_flow": str(cash_flow.remaining),
                 "emergency_fund_months": str(fund_months),
-                "upcoming_obligations": [],
-                "active_risk_flags": 0,
+                "upcoming_obligations": self._upcoming_obligations(
+                    user_id=user_id, as_of=position.as_of
+                ),
+                "active_risk_flags": RiskFlagRepository(self._session).count_active(
+                    user_id=user_id
+                ),
             },
         )
         self._snapshots.add(snapshot)
         self._session.commit()
         return snapshot
+
+    def _upcoming_obligations(self, *, user_id: UUID, as_of: date) -> list[dict]:
+        """What must leave the account in the next 30 days: each debt's contractual
+        payment, plus every detected recurring outflow.
+
+        Imported lazily: RecurrenceService reads transactions and DebtRepository reads
+        debts, neither of which this module otherwise needs, and importing them at module
+        scope would make PositionService the hub of a cycle (RiskService already imports
+        PositionService).
+        """
+        from app.repositories.debt import DebtRepository
+        from app.services.recurrence import RecurrenceService
+
+        horizon = as_of + timedelta(days=UPCOMING_WINDOW_DAYS)
+        obligations: list[dict] = []
+
+        for debt in DebtRepository(self._session).list_for_user(user_id=user_id):
+            payment = debt.instalment if debt.instalment is not None else debt.minimum_payment
+            due = next_occurrence_of_day(as_of=as_of, day=debt.started_on.day)
+            if due <= horizon:
+                obligations.append(
+                    {
+                        "label": f"{debt.debt_type.value.replace('_', ' ')} instalment",
+                        "amount": str(payment),
+                        "due_on": due.isoformat(),
+                        "source": "debt",
+                    }
+                )
+
+        obligations.extend(
+            RecurrenceService(self._session).upcoming(
+                user_id=user_id, from_date=as_of, days_ahead=UPCOMING_WINDOW_DAYS
+            )
+        )
+        return sorted(obligations, key=lambda row: row["due_on"])
 
     def dashboard_payload(self, *, user_id: UUID) -> dict:
         snapshot = self._snapshots.latest_for_user(user_id=user_id)

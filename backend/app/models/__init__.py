@@ -7,6 +7,7 @@ from app.models.goal import Goal, GoalContribution
 from app.models.health_assessment import HealthAssessment
 from app.models.import_batch import ImportBatch, StagedTransaction
 from app.models.position_snapshot import PositionSnapshot
+from app.models.risk_flag import RiskFlag
 from app.models.scenario import Scenario, ScenarioAssumption, ScenarioResult
 from app.models.transaction import Transaction
 from app.models.user import User
@@ -24,6 +25,7 @@ __all__ = [
     "ImportBatch",
     "StagedTransaction",
     "PositionSnapshot",
+    "RiskFlag",
     "Scenario",
     "ScenarioAssumption",
     "ScenarioResult",
