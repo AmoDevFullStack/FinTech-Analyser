@@ -6,11 +6,14 @@ from app.llm.intent import (
     classify,
     clarifying_question,
     extract_parameters,
+    small_talk_reply,
     unsupported_explanation,
 )
 from app.llm.interpreter import (
     FIGURE_PROMPT_KEYS,
+    SMALL_TALK_CONSTRAINTS,
     NullInterpreter,
+    NarrationPayload,
     build_narration_payload,
 )
 
@@ -52,6 +55,38 @@ def test_an_unmatched_question_is_unsupported_not_approximated() -> None:
     explanation = unsupported_explanation(intent)
     assert "can't model that" in explanation
     assert "affordability check" in explanation
+
+
+def test_a_bare_greeting_is_small_talk_not_unsupported() -> None:
+    for question in ("hi", "Hello!", "hey there", "thanks so much", "good morning"):
+        intent = classify(question, as_of=AS_OF)
+        assert intent.capability is Capability.SMALL_TALK, question
+        assert intent.is_supported is True
+
+
+def test_a_real_capability_phrase_wins_over_an_incidental_greeting() -> None:
+    """"Hi, can I afford a R5,000 phone?" is an affordability check that happens to open
+    with a greeting, not small talk — the capability loop is checked first.
+    """
+    intent = classify("Hi, can I afford a R5,000 phone?", as_of=AS_OF)
+    assert intent.capability is Capability.AFFORDABILITY_CHECK
+
+
+def test_a_greeting_word_embedded_in_another_word_is_not_matched() -> None:
+    """"This" contains the substring "hi"; word-boundary matching must not fire on it."""
+    intent = classify("This question has nothing to do with money", as_of=AS_OF)
+    assert intent.capability is Capability.UNSUPPORTED
+
+
+def test_small_talk_reply_names_what_it_can_help_with() -> None:
+    reply = small_talk_reply()
+    assert "affordability check" in reply
+    assert "small talk" not in reply
+
+
+def test_unsupported_explanation_does_not_advertise_small_talk() -> None:
+    intent = classify("Should I emigrate to Portugal?", as_of=AS_OF)
+    assert "small talk" not in unsupported_explanation(intent)
 
 
 def test_each_capability_has_a_recognisable_question() -> None:
@@ -150,4 +185,14 @@ def test_response_constraints_forbid_computing_and_advising() -> None:
 def test_the_default_interpreter_returns_no_narration() -> None:
     """With no provider, figures are returned unnarrated rather than withheld."""
     payload = build_narration_payload(question="anything", figures=[])
+    assert NullInterpreter().narrate(payload=payload) is None
+
+
+def test_small_talk_has_its_own_constraints_and_no_figures() -> None:
+    """A greeting carries no figures, so RESPONSE_CONSTRAINTS's "say it is not available"
+    framing does not apply — small talk gets its own constraints string instead.
+    """
+    payload = NarrationPayload(question="hi", figures=(), constraints=SMALL_TALK_CONSTRAINTS)
+    assert payload.figures == ()
+    assert "greeting" in payload.constraints
     assert NullInterpreter().narrate(payload=payload) is None

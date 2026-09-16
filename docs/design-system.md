@@ -40,6 +40,13 @@ Consequences of taking that seriously:
 - Colour is scarce. Spending it on decoration leaves none for meaning.
 - There is one typeface. Hierarchy comes from weight, size, and space.
 
+**Revised by ADR-011.** "Everything else is deliberately quiet" described a near-monochrome
+palette that is no longer what `index.css` ships — the product owner asked for a more
+saturated theme. The organising idea above still holds: certainty is still geometry, not
+hue, and colour still means one thing per token. What changed is how much of the interface
+gets a colour at all, and — for the health score only, and only there — that a token family
+now exists whose entire job is to encode a position's quality. See §2.3.
+
 ---
 
 ## 2. Colour
@@ -52,20 +59,30 @@ Contrast figures below are computed WCAG ratios against the stated surface, not 
 
 ### 2.1 Light
 
+**Revised by ADR-011** to a more saturated palette; the muted values this table used to
+carry are in that record's history if they are ever needed again.
+
 | Token | Value | On `surface` | Use for |
 |---|---|---|---|
-| `--surface` | `#FCFCFB` | — | Page ground |
+| `--surface` | `#F8F6FF` | — | Page ground |
 | `--surface-raised` | `#FFFFFF` | — | Cards, panels, popovers |
-| `--surface-sunken` | `#F1F1EE` | — | Table header rows, inset wells |
-| `--content` | `#17171B` | 17.41:1 | Primary text, figures |
-| `--content-secondary` | `#56565F` | 7.07:1 | Labels, supporting text |
-| `--content-tertiary` | `#6F6F78` | 4.85:1 | Timestamps, axis ticks, captions |
-| `--rule` | `#E3E3DD` | 1.26:1 | Decorative separators only |
-| `--rule-meaning` | `#8E8E87` | 3.21:1 | Rules that carry information |
-| `--accent` | `#1C3F6E` | 10.30:1 | Interactive elements, focus ring |
-| `--signal-caution` | `#8A5A00` | 5.77:1 | Caution state, always with a label |
-| `--signal-critical` | `#9B2C24` | 7.36:1 | Critical state, always with a label |
-| `--signal-positive` | `#1F5D3F` | 7.59:1 | Direction of a delta, nothing else |
+| `--surface-sunken` | `#EDE9FE` | — | Table header rows, inset wells |
+| `--content` | `#17171B` | 16.70:1 | Primary text, figures |
+| `--content-secondary` | `#56565F` | 6.78:1 | Labels, supporting text |
+| `--content-tertiary` | `#6F6F78` | 4.65:1 | Timestamps, axis ticks, captions |
+| `--rule` | `#E3DDF5` | 1.23:1 | Decorative separators only |
+| `--rule-meaning` | `#8E8E87` | 3.08:1 | Rules that carry information |
+| `--accent` | `#4338CA` | 7.38:1 | Interactive elements, focus ring |
+| `--signal-caution` | `#B45309` | 4.69:1 | Caution state, always with a label |
+| `--signal-critical` | `#B91C1C` | 6.04:1 | Critical state, always with a label |
+| `--signal-positive` | `#15803D` | 4.69:1 | Direction of a delta, nothing else |
+| `--score-poor` | `#DC2626` | 4.51:1 | `ScoreGauge` ring only — see below |
+| `--score-fair` | `#D97706` | 2.98:1 | `ScoreGauge` ring only — see below |
+| `--score-good` | `#16A34A` | 3.08:1 | `ScoreGauge` ring only — see below |
+
+The `--score-*` tokens are held to WCAG 1.4.11's 3:1 graphical-object floor, not the 4.5:1
+text floor the tokens above them clear — they are drawn only as a ring stroke, never as
+text. ADR-011 records why they exist as a family separate from `--signal-*`.
 
 ### 2.2 Dark
 
@@ -112,6 +129,12 @@ caution state is an amber dot *and* the word describing it.
 **`--signal-positive` is the token most likely to be abused.** It marks the direction of a
 change, never the quality of a financial position. `specs/dashboard.md` deliberately omits
 a green all-clear because it "trains the user to skim past it". Do not reintroduce one.
+
+**One narrow, recorded exception.** `ScoreGauge` colours its ring by the financial health
+score's band — exactly the thing the paragraph above forbids. ADR-011 authorises this for
+that one component only, via its own `--score-*` token family, not by reusing
+`--signal-*`. It is not a precedent for colour-coding a debt, a goal, or a budget category
+by "goodness" — that question gets asked, and recorded, again each time it comes up.
 
 **No hard-coded colour values anywhere.** Every colour is a token. A hex value in a
 component is a bug.
@@ -199,6 +222,12 @@ Breakpoints, and what changes at each:
 figures wrap beneath their labels rather than truncating. `typography.md › Supporting
 Dynamic Type`: "Keep text truncation to a minimum as font size increases."
 
+**Navigation is one control, not a row.** Destinations live behind a single menu control
+that opens a drawer; the header carries the menu control, the product name, and at most one
+promoted action. A row of destinations is only acceptable at four or fewer. The drawer is
+modal: Escape closes it, focus returns to the control that opened it, and its contents
+leave the accessibility tree while it is shut. Recorded as ADR-009.
+
 **Targets are at least 44×44px** with at least 8px between adjacent controls.
 `accessibility.md › Mobility` sets 44×44 pt as the touch default and treats spacing as
 "as important as size". Applying the touch figure rather than the pointer figure across the
@@ -250,7 +279,14 @@ answers a question a table cannot.
 **Mark types**, per `charts.md › Marks`: bars for comparison across categories and for
 values that represent a sum per period; lines for change over time; points for individual
 values, outliers, and clusters. Cash flow is a flow, not a proportion — `specs/dashboard.md`
-requires it "rendered as a flow, not a pie chart". There are no pie charts in this product.
+requires it "rendered as a flow, not a pie chart". There are no pie charts in this product:
+no breakdown of categories (spending, cash flow, a portfolio) is ever drawn as slices of a
+whole.
+
+`ScoreGauge` (ADR-011) is not an instance of that rule. It draws one scalar, 0–100, as a
+circular meter — the same construct as a battery or a loading indicator, nothing
+decomposed into parts of a whole. A future chart that shows a breakdown across categories
+is still not a pie chart, gauge-shaped or otherwise.
 
 **Projection is drawn differently from history.** Actual periods are solid; projected
 periods are dashed and sit after a labelled boundary marking today. The baseline comparison
@@ -349,6 +385,12 @@ fallback." Here the fallback is the entire point.
 **When no engine can answer, say what cannot be modelled.** `supported: false` renders as a
 statement of the system's limits, never as an approximation. `generative-ai.md › Outputs`:
 "Help people improve requests when blocked or undesirable results occur."
+
+**The conversation is a thread, and an answer is not chatter.** Ask renders as a
+full-height conversation on its own surface, outside the app shell. Within it, a question is
+a bubble because it is speech, and an answer is a panel because it is evidence — figures
+first with the certainty treatment of section 5, generated prose after them and labelled as
+generated. Dressing a table of computed figures as a chat bubble would undersell what it is.
 
 **Generation feedback is specific.** `generative-ai.md › Outputs`: "instead of
 'Processing…', say 'Finding substitutions for ingredients'". Here: "Running the affordability

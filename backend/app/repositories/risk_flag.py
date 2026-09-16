@@ -2,10 +2,42 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.core.db import DbSession
 from app.models.risk_flag import RiskFlag, RiskStatus
+
+_LIST_FOR_USER = text(
+    """
+    SELECT *
+      FROM risk_flags
+     WHERE user_id = :user_id
+       AND (
+         CAST(:status AS risk_status_enum) IS NULL
+         OR status = CAST(:status AS risk_status_enum)
+       )
+     ORDER BY detected_on DESC
+    """
+)
+
+_LATEST_OF_TYPE = text(
+    """
+    SELECT *
+      FROM risk_flags
+     WHERE user_id = :user_id
+       AND risk_type = :risk_type
+     ORDER BY detected_on DESC, created_at DESC
+    """
+)
+
+_GET_FOR_USER = text(
+    """
+    SELECT *
+      FROM risk_flags
+     WHERE id = :flag_id
+       AND user_id = :user_id
+    """
+)
 
 
 class RiskFlagRepository:
@@ -17,11 +49,12 @@ class RiskFlagRepository:
     def list_for_user(
         self, *, user_id: UUID, status: RiskStatus | None = RiskStatus.ACTIVE
     ) -> list[RiskFlag]:
-        stmt = select(RiskFlag).where(RiskFlag.user_id == user_id)
-        if status is not None:
-            stmt = stmt.where(RiskFlag.status == status)
-        stmt = stmt.order_by(RiskFlag.detected_on.desc())
-        return list(self._session.scalars(stmt))
+        return list(
+            self._session.scalars(
+                select(RiskFlag).from_statement(_LIST_FOR_USER),
+                {"user_id": user_id, "status": status.value if status is not None else None},
+            )
+        )
 
     def latest_of_type(self, *, user_id: UUID, risk_type: str) -> RiskFlag | None:
         """The most recent flag of a type in any status.
@@ -30,16 +63,16 @@ class RiskFlagRepository:
         status: an active one is updated rather than duplicated, and a dismissed one
         suppresses for 30 days.
         """
-        stmt = (
-            select(RiskFlag)
-            .where(RiskFlag.user_id == user_id, RiskFlag.risk_type == risk_type)
-            .order_by(RiskFlag.detected_on.desc(), RiskFlag.created_at.desc())
-        )
-        return self._session.scalars(stmt).first()
+        return self._session.scalars(
+            select(RiskFlag).from_statement(_LATEST_OF_TYPE),
+            {"user_id": user_id, "risk_type": risk_type},
+        ).first()
 
     def get_for_user(self, flag_id: UUID, *, user_id: UUID) -> RiskFlag | None:
-        stmt = select(RiskFlag).where(RiskFlag.id == flag_id, RiskFlag.user_id == user_id)
-        return self._session.scalars(stmt).first()
+        return self._session.scalars(
+            select(RiskFlag).from_statement(_GET_FOR_USER),
+            {"flag_id": flag_id, "user_id": user_id},
+        ).first()
 
     def add(self, flag: RiskFlag) -> RiskFlag:
         self._session.add(flag)

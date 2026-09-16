@@ -41,6 +41,15 @@ _AMOUNT_PATTERN = re.compile(
 _MONTH_PATTERN = re.compile("|".join(MONTHS), re.IGNORECASE)
 _HORIZON_PATTERN = re.compile(r"(\d+)\s*(month|year)s?", re.IGNORECASE)
 
+# Word-boundary, not substring: a bare "hi" would otherwise match inside "this", "history".
+# Checked only after every real capability has missed, so "hi, what's my net worth" still
+# classifies as POSITION_QUERY.
+_SMALL_TALK_PATTERN = re.compile(
+    r"\b(hi|hello|hey|howzit|good morning|good afternoon|good evening|how are you|"
+    r"thanks|thank you|cheers|bye|goodbye)\b",
+    re.IGNORECASE,
+)
+
 
 class Capability(str, enum.Enum):
     AFFORDABILITY_CHECK = "affordability_check"
@@ -51,6 +60,7 @@ class Capability(str, enum.Enum):
     GOAL_QUESTION = "goal_question"
     FORECAST_QUESTION = "forecast_question"
     FIGURE_EXPLANATION = "figure_explanation"
+    SMALL_TALK = "small_talk"
     UNSUPPORTED = "unsupported"
 
 
@@ -197,6 +207,14 @@ def classify(question: str, *, as_of: date | None = None) -> Intent:
                     matched_on=phrase,
                 )
 
+    small_talk_match = _SMALL_TALK_PATTERN.search(lowered)
+    if small_talk_match:
+        return Intent(
+            capability=Capability.SMALL_TALK,
+            parameters=parameters,
+            matched_on=small_talk_match.group(0),
+        )
+
     return Intent(capability=Capability.UNSUPPORTED, parameters=parameters)
 
 
@@ -210,18 +228,35 @@ def clarifying_question(intent: Intent) -> str | None:
     return f"I need {names} before I can answer that."
 
 
+# Capabilities worth advertising to the reader. SMALL_TALK is an escape hatch for
+# greetings and pleasantries, not a financial capability, so it is left out of both
+# messages below.
+_NON_ADVERTISED_CAPABILITIES = (Capability.UNSUPPORTED, Capability.SMALL_TALK)
+
+
+def _advertised_capabilities() -> str:
+    return ", ".join(
+        c.value.replace("_", " ") for c in Capability if c not in _NON_ADVERTISED_CAPABILITIES
+    )
+
+
 def unsupported_explanation(intent: Intent) -> str:
     """What the system cannot yet model, stated plainly.
 
     specs/ai-cfo.md: unsupported questions "say so and name what is missing".
     """
-    supported = ", ".join(
-        c.value.replace("_", " ")
-        for c in Capability
-        if c is not Capability.UNSUPPORTED
-    )
     return (
         "I can't model that question yet. I can answer questions about: "
-        f"{supported}. I don't estimate answers outside those, because an estimate here "
-        "would look exactly like a calculation."
+        f"{_advertised_capabilities()}. I don't estimate answers outside those, because "
+        "an estimate here would look exactly like a calculation."
     )
+
+
+def small_talk_reply() -> str:
+    """The deterministic fallback for a greeting or pleasantry.
+
+    Used when no narration provider is configured, so a bare "hi" still gets a warm,
+    on-brand reply instead of an empty answer card — per the same "usable with no model"
+    requirement that governs every other capability.
+    """
+    return f"Hi! I can help with {_advertised_capabilities()} — ask me about any of those."

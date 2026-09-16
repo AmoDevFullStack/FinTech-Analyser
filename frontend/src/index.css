@@ -9,21 +9,60 @@
    guideline this deviates from. */
 :root {
   color-scheme: light;
-  --surface: #fcfcfb;
+  --surface: #f8f6ff;
   --surface-raised: #ffffff;
-  --surface-sunken: #f1f1ee;
+  --surface-sunken: #ede9fe;
   --content: #17171b;
   --content-secondary: #56565f;
   --content-tertiary: #6f6f78;
-  --rule: #e3e3dd;
+  --rule: #e3ddf5;
   --rule-meaning: #8e8e87;
-  --accent: #1c3f6e;
-  --signal-caution: #8a5a00;
-  --signal-critical: #9b2c24;
-  --signal-positive: #1f5d3f;
+  --accent: #4338ca;
+  --signal-caution: #b45309;
+  --signal-critical: #b91c1c;
+  --signal-positive: #15803d;
+
+  /* Score bands, for ScoreGauge only. Deliberately a separate family from --signal-*:
+     those mean "state" (caution/critical/direction of change) per design-system.md §2.3,
+     and must not also carry "quality of financial position". These do, by design —
+     docs/decisions.md ADR-011 records the reversal of the "no position-quality colour"
+     rule for this one component. */
+  --score-poor: #dc2626;
+  --score-fair: #d97706;
+  --score-good: #16a34a;
+
+  /* Elevation. This file is the one place a raw colour value may appear (§2.3 forbids
+     them in components, not in the token layer). Shadows are stated as tokens rather
+     than per-component arbitrary values so depth stays a system with three steps
+     instead of a per-file guess: hairline lift, resting panel, floating layer. */
+  --shadow-1: 0 1px 2px rgba(23, 23, 27, 0.06);
+  --shadow-2: 0 1px 3px rgba(23, 23, 27, 0.08), 0 8px 24px -12px rgba(23, 23, 27, 0.14);
+  --shadow-3: 0 2px 8px rgba(23, 23, 27, 0.1), 0 24px 48px -16px rgba(23, 23, 27, 0.22);
+
+  /* Glass fills, shared by Button and the app bar so the two read as one material. */
+  --glass-raised: rgba(255, 255, 255, 0.72);
+  --glass-hairline: rgba(255, 255, 255, 0.6);
+
+  /* Scrim behind the navigation drawer. A token, not `bg-content/20`: `--content` is an
+     opaque custom property to Tailwind, so its `/opacity` modifier silently yields a
+     fully transparent fill — the same trap documented in components/Button.tsx. */
+  --scrim: rgba(23, 23, 27, 0.28);
 }
 
 body {
   background: var(--surface);
   color: var(--content);
+}
+
+/* §7: under Reduce Motion, positional animation is removed rather than merely shortened,
+   and nothing is left relying on motion to communicate a change. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

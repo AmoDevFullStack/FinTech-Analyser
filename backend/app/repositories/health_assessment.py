@@ -3,10 +3,31 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.core.db import DbSession
 from app.models.health_assessment import HealthAssessment
+
+_LATEST_FOR_USER = text(
+    """
+    SELECT *
+      FROM health_assessments
+     WHERE user_id = :user_id
+     ORDER BY computed_at DESC
+    """
+)
+
+_HISTORY_FOR_USER = text(
+    """
+    SELECT *
+      FROM health_assessments
+     WHERE user_id = :user_id
+       AND (CAST(:since AS timestamptz) IS NULL OR computed_at >= CAST(:since AS timestamptz))
+       AND (CAST(:until AS timestamptz) IS NULL OR computed_at <= CAST(:until AS timestamptz))
+     ORDER BY computed_at DESC
+     LIMIT :limit
+    """
+)
 
 
 class HealthAssessmentRepository:
@@ -14,12 +35,9 @@ class HealthAssessmentRepository:
         self._session = session
 
     def latest_for_user(self, *, user_id: UUID) -> HealthAssessment | None:
-        stmt = (
-            select(HealthAssessment)
-            .where(HealthAssessment.user_id == user_id)
-            .order_by(HealthAssessment.computed_at.desc())
-        )
-        return self._session.scalars(stmt).first()
+        return self._session.scalars(
+            select(HealthAssessment).from_statement(_LATEST_FOR_USER), {"user_id": user_id}
+        ).first()
 
     def history_for_user(
         self,
@@ -29,13 +47,12 @@ class HealthAssessmentRepository:
         until: datetime | None = None,
         limit: int = 50,
     ) -> list[HealthAssessment]:
-        stmt = select(HealthAssessment).where(HealthAssessment.user_id == user_id)
-        if since is not None:
-            stmt = stmt.where(HealthAssessment.computed_at >= since)
-        if until is not None:
-            stmt = stmt.where(HealthAssessment.computed_at <= until)
-        stmt = stmt.order_by(HealthAssessment.computed_at.desc()).limit(limit)
-        return list(self._session.scalars(stmt))
+        return list(
+            self._session.scalars(
+                select(HealthAssessment).from_statement(_HISTORY_FOR_USER),
+                {"user_id": user_id, "since": since, "until": until, "limit": limit},
+            )
+        )
 
     def add(self, assessment: HealthAssessment) -> HealthAssessment:
         self._session.add(assessment)

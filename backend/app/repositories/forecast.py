@@ -2,10 +2,36 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import select, text
+
 from app.core.db import DbSession
 
 from app.models.forecast import Forecast, ForecastPeriod
+
+_LATEST_FOR_USER = text(
+    """
+    SELECT *
+      FROM forecasts
+     WHERE user_id = :user_id
+     ORDER BY generated_at DESC
+    """
+)
+
+_DELETE_PERIODS = text(
+    """
+    DELETE FROM forecast_periods
+     WHERE forecast_id = :forecast_id
+    """
+)
+
+_PERIODS_FOR = text(
+    """
+    SELECT *
+      FROM forecast_periods
+     WHERE forecast_id = :forecast_id
+     ORDER BY period_index
+    """
+)
 
 
 class ForecastRepository:
@@ -13,12 +39,9 @@ class ForecastRepository:
         self._session = session
 
     def latest_for_user(self, *, user_id: UUID) -> Forecast | None:
-        stmt = (
-            select(Forecast)
-            .where(Forecast.user_id == user_id)
-            .order_by(Forecast.generated_at.desc())
-        )
-        return self._session.scalars(stmt).first()
+        return self._session.scalars(
+            select(Forecast).from_statement(_LATEST_FOR_USER), {"user_id": user_id}
+        ).first()
 
     def replace_for_user(
         self, *, user_id: UUID, forecast: Forecast, periods: list[ForecastPeriod]
@@ -28,9 +51,7 @@ class ForecastRepository:
         """
         existing = self.latest_for_user(user_id=user_id)
         if existing is not None:
-            self._session.execute(
-                delete(ForecastPeriod).where(ForecastPeriod.forecast_id == existing.id)
-            )
+            self._session.execute(_DELETE_PERIODS, {"forecast_id": existing.id})
             self._session.delete(existing)
             self._session.flush()
 
@@ -43,9 +64,9 @@ class ForecastRepository:
         return forecast
 
     def periods_for(self, forecast_id: UUID) -> list[ForecastPeriod]:
-        stmt = (
-            select(ForecastPeriod)
-            .where(ForecastPeriod.forecast_id == forecast_id)
-            .order_by(ForecastPeriod.period_index)
+        return list(
+            self._session.scalars(
+                select(ForecastPeriod).from_statement(_PERIODS_FOR),
+                {"forecast_id": forecast_id},
+            )
         )
-        return list(self._session.scalars(stmt))

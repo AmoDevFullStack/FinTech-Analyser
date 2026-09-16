@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
+import { ScoreGauge } from "@/components/ScoreGauge";
 import type { Position } from "@/api/types";
 import { healthComponentLabel } from "./healthComponentLabels";
 
@@ -25,24 +26,24 @@ export function HealthRegion({ position }: { position: Position }) {
         <EmptyState message="Not yet assessed." />
       ) : (
         <>
-          <div className="flex items-baseline gap-3">
-            <span className="text-position tabular-nums">{position.health_score}</span>
-            <span className="text-body text-content-secondary">of 100</span>
-            {position.health_score_change !== null ? (
-              <TrendArrow change={position.health_score_change} />
-            ) : null}
-          </div>
-
-          {position.health_largest_negative_contributor ? (
-            <div className="flex flex-col gap-1">
-              <span className="text-label text-content-secondary">
-                Largest drag on the score
-              </span>
-              <p className="text-body">
-                {healthComponentLabel(position.health_largest_negative_contributor)}.
-              </p>
+          <div className="flex items-center gap-5">
+            <ScoreGauge value={position.health_score} label="Financial health score" />
+            <div className="flex flex-col gap-3">
+              {position.health_score_change !== null ? (
+                <TrendArrow change={position.health_score_change} />
+              ) : null}
+              {position.health_largest_negative_contributor ? (
+                <div className="flex flex-col gap-1">
+                  <span className="text-label text-content-secondary">
+                    Largest drag on the score
+                  </span>
+                  <p className="text-body">
+                    {healthComponentLabel(position.health_largest_negative_contributor)}.
+                  </p>
+                </div>
+              ) : null}
             </div>
-          ) : null}
+          </div>
 
           <Link to="/health" className="text-label text-accent w-fit">
             See all components

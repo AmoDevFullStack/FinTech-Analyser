@@ -18,6 +18,8 @@ test("import a CSV, run the vehicle purchase scenario, and see the result", asyn
 
   await expect(page.getByRole("heading", { name: "Financial Digital Twin" })).toBeVisible();
 
+  // Destinations live behind the menu control now, not in a row of tabs.
+  await page.getByRole("button", { name: "Menu" }).click();
   await page.getByRole("link", { name: "Scenarios" }).click();
   await page.getByRole("button", { name: "Create scenario" }).click();
 
