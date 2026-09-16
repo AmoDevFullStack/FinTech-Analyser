@@ -2,10 +2,29 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.core.db import DbSession
 from app.models.debt import Debt
+
+_LIST_FOR_USER = text(
+    """
+    SELECT *
+      FROM debts
+     WHERE user_id = :user_id
+       AND deleted_at IS NULL
+    """
+)
+
+_GET_FOR_USER = text(
+    """
+    SELECT *
+      FROM debts
+     WHERE id = :debt_id
+       AND user_id = :user_id
+       AND deleted_at IS NULL
+    """
+)
 
 
 class DebtRepository:
@@ -17,14 +36,17 @@ class DebtRepository:
         self._session = session
 
     def list_for_user(self, *, user_id: UUID) -> list[Debt]:
-        stmt = select(Debt).where(Debt.user_id == user_id, Debt.deleted_at.is_(None))
-        return list(self._session.scalars(stmt))
+        return list(
+            self._session.scalars(
+                select(Debt).from_statement(_LIST_FOR_USER), {"user_id": user_id}
+            )
+        )
 
     def get_for_user(self, debt_id: UUID, *, user_id: UUID) -> Debt | None:
-        stmt = select(Debt).where(
-            Debt.id == debt_id, Debt.user_id == user_id, Debt.deleted_at.is_(None)
-        )
-        return self._session.scalars(stmt).first()
+        return self._session.scalars(
+            select(Debt).from_statement(_GET_FOR_USER),
+            {"debt_id": debt_id, "user_id": user_id},
+        ).first()
 
     def add(self, debt: Debt) -> Debt:
         self._session.add(debt)

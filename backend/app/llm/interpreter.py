@@ -30,6 +30,15 @@ RESPONSE_CONSTRAINTS = (
     "than supplying one."
 )
 
+# For Capability.SMALL_TALK: no figures exist to narrate, so RESPONSE_CONSTRAINTS's
+# "say it is not available" framing does not fit a bare "hi". This asks for a reply in
+# kind instead, still under the same no-figures-invented rule.
+SMALL_TALK_CONSTRAINTS = (
+    "This is a greeting or pleasantry, not a financial question. No figures apply. "
+    "Reply warmly in one short sentence, then say what kinds of questions you can help "
+    "with. Do not invent or imply any number."
+)
+
 
 @dataclass(frozen=True, slots=True)
 class NarrationPayload:

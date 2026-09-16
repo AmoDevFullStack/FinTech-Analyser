@@ -24,9 +24,16 @@ from app.llm.intent import (
     Intent,
     clarifying_question,
     classify,
+    small_talk_reply,
     unsupported_explanation,
 )
-from app.llm.interpreter import Interpreter, NullInterpreter, build_narration_payload
+from app.llm.interpreter import (
+    SMALL_TALK_CONSTRAINTS,
+    Interpreter,
+    NarrationPayload,
+    NullInterpreter,
+    build_narration_payload,
+)
 from app.models.assistant import AssistantConversation, AssistantMessage
 from app.repositories.assistant import AssistantRepository
 from app.repositories.debt import DebtRepository
@@ -129,6 +136,23 @@ class AssistantService:
                 answer=None,
                 narration_available=False,
                 clarification=clarifying_question(intent),
+                capability=intent.capability.value,
+            )
+            return self._record(user_id=user_id, conversation_id=conversation_id, question=question, answer=answer)
+
+        if intent.capability is Capability.SMALL_TALK:
+            # No figures apply and no engine runs — a greeting is answered in kind, never
+            # computed. The reply is LLM-written when a provider is configured, and the
+            # same deterministic line every other capability falls back to otherwise.
+            narration = self._interpreter.narrate(
+                payload=NarrationPayload(
+                    question=question, figures=(), constraints=SMALL_TALK_CONSTRAINTS
+                )
+            )
+            answer = AssistantAnswer(
+                supported=True,
+                answer=narration or small_talk_reply(),
+                narration_available=narration is not None,
                 capability=intent.capability.value,
             )
             return self._record(user_id=user_id, conversation_id=conversation_id, question=question, answer=answer)
@@ -492,6 +516,7 @@ class AssistantService:
                 answer=answer.answer,
                 capability=answer.capability,
                 supported=answer.supported,
+                narration_available=answer.narration_available,
                 figures=[f.as_dict() for f in answer.figures],
             )
         )

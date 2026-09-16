@@ -28,6 +28,20 @@ class Config:
 
     LOGIN_RATE_LIMIT: str = "5 per 15 minutes"
 
+    # Narration provider (ADR-002). Optional by design: with no key the app runs
+    # NullInterpreter and the assistant returns figures with `narration_available: false`,
+    # which is the path requirement 12 keeps working and the one developed against.
+    OPENAI_API_KEY: str = field(default_factory=lambda: os.environ.get("OPENAI_API_KEY", ""))
+    OPENAI_MODEL: str = field(
+        default_factory=lambda: os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    )
+    OPENAI_BASE_URL: str = field(default_factory=lambda: os.environ.get("OPENAI_BASE_URL", ""))
+    # Short on purpose: narration is the optional half of the response, so waiting on it
+    # is worse than shipping the figures without it.
+    OPENAI_TIMEOUT_SECONDS: float = field(
+        default_factory=lambda: float(os.environ.get("OPENAI_TIMEOUT_SECONDS", "8"))
+    )
+
     SQLALCHEMY_ENGINE_OPTIONS: dict = field(
         default_factory=lambda: {"pool_pre_ping": True}
     )
@@ -47,6 +61,9 @@ class TestConfig(Config):
     REDIS_URL: str = "redis://localhost:6379/1"
     SESSION_COOKIE_SECURE: bool = False
     TESTING: bool = True
+    # No test ever calls a provider. Blank here regardless of the developer's environment,
+    # so a key exported for local use cannot make the suite hit the network.
+    OPENAI_API_KEY: str = ""
 
 
 def load_config() -> Config:

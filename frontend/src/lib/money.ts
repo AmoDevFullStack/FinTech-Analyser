@@ -58,3 +58,11 @@ export function rateAsPercentWidth(value: Rate, max = 100): number {
   const amount = Number(value) * 100;
   return Math.max(0, Math.min(amount, max));
 }
+
+/** A 0–100 score narrowed to a number for a gauge or meter. The API sends every Decimal
+ * field as a string, score included, so this is subject to the same rule as Money and
+ * Rate above: this file is the only place it may be parsed back to a number.
+ */
+export function scoreAsNumber(value: string): number {
+  return Math.round(Number(value));
+}

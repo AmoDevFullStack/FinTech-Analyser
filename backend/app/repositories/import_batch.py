@@ -2,10 +2,35 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import select, text
+
 from app.core.db import DbSession
 
 from app.models.import_batch import ImportBatch, StagedTransaction
+
+_GET_FOR_USER = text(
+    """
+    SELECT *
+      FROM import_batches
+     WHERE id = :batch_id
+       AND user_id = :user_id
+    """
+)
+
+_STAGED_FOR = text(
+    """
+    SELECT *
+      FROM staged_transactions
+     WHERE import_batch_id = :batch_id
+    """
+)
+
+_CLEAR_STAGED = text(
+    """
+    DELETE FROM staged_transactions
+     WHERE import_batch_id = :batch_id
+    """
+)
 
 
 class ImportBatchRepository:
@@ -13,10 +38,10 @@ class ImportBatchRepository:
         self._session = session
 
     def get_for_user(self, batch_id: UUID, *, user_id: UUID) -> ImportBatch | None:
-        stmt = select(ImportBatch).where(
-            ImportBatch.id == batch_id, ImportBatch.user_id == user_id
-        )
-        return self._session.scalars(stmt).first()
+        return self._session.scalars(
+            select(ImportBatch).from_statement(_GET_FOR_USER),
+            {"batch_id": batch_id, "user_id": user_id},
+        ).first()
 
     def add(self, batch: ImportBatch) -> ImportBatch:
         self._session.add(batch)
@@ -28,11 +53,12 @@ class ImportBatchRepository:
         self._session.flush()
 
     def staged_for(self, batch_id: UUID) -> list[StagedTransaction]:
-        stmt = select(StagedTransaction).where(StagedTransaction.import_batch_id == batch_id)
-        return list(self._session.scalars(stmt))
+        return list(
+            self._session.scalars(
+                select(StagedTransaction).from_statement(_STAGED_FOR), {"batch_id": batch_id}
+            )
+        )
 
     def clear_staged(self, batch_id: UUID) -> None:
-        self._session.execute(
-            delete(StagedTransaction).where(StagedTransaction.import_batch_id == batch_id)
-        )
+        self._session.execute(_CLEAR_STAGED, {"batch_id": batch_id})
         self._session.flush()

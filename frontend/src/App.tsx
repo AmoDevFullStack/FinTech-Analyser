@@ -32,6 +32,16 @@ export function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      {/* Ask sits outside <Layout> on purpose: it is a full-height conversation with its
+          own chrome, not a page inside the app shell. See docs/frontend.md §6. */}
+      <Route
+        path="/ask"
+        element={
+          <RequireAuth>
+            <Assistant />
+          </RequireAuth>
+        }
+      />
       <Route
         element={
           <RequireAuth>
@@ -48,7 +58,6 @@ export function App() {
         <Route path="/goals" element={<Goals />} />
         <Route path="/forecast" element={<Forecast />} />
         <Route path="/worth-knowing" element={<Recommendations />} />
-        <Route path="/ask" element={<Assistant />} />
         <Route path="/scenarios" element={<Scenarios />} />
         <Route path="/scenarios/:scenarioId" element={<ScenarioDetail />} />
       </Route>

@@ -802,3 +802,188 @@ The backend Foundation adds:
 
 A library here is replaced, or a new one is added — update this record in the same pull
 request, per `docs/architecture.md` §5.
+
+---
+
+# ADR-009: One menu control instead of a row of destinations
+
+**Status:** Accepted
+**Date:** 2026-09-16
+**Deciders:** Project owner
+
+## Context
+
+The app shell listed nine destinations as a row of links in the header. At that count the
+row wrapped to two lines below roughly 900px, gave every destination identical visual
+weight regardless of how often it is used, and left no room in the header for the product
+name or for a promoted action. It also had no answer for the tenth destination.
+
+`docs/design-system.md` §4 requires 44×44px targets with 8px between them; a nine-item
+wrapped row met neither comfortably.
+
+## Decision
+
+Destinations live behind a single menu control that opens a drawer. The header carries the
+menu control, the product name, and one promoted action — **Ask**.
+
+The drawer is a modal surface: Escape closes it, closing returns focus to the control that
+opened it, a destination change closes it, and its links are removed from the
+accessibility tree while it is shut.
+
+**Ask is not in the drawer.** It is a conversation rather than a page and opens as its own
+full-height surface outside the app shell, so the navigation chrome never competes with the
+thread. See `docs/frontend.md` §7.
+
+## Consequences
+
+- One destination is one tap further away than it was. Accepted: the previous row bought
+  that tap back only for whichever destinations happened to fit on the first line.
+- The header now has room for a promoted action, which is what makes the Ask surface
+  reachable from everywhere without occupying a navigation slot.
+- Playwright specs that clicked a destination directly must open the menu first; the
+  scenario spec is updated accordingly.
+
+## Revisit if
+
+The destination count drops to four or fewer, at which point a visible row costs nothing
+and is faster.
+
+---
+
+# ADR-010: OpenAI as the narration provider
+
+**Status:** Accepted
+**Date:** 2026-09-16
+**Deciders:** Project owner
+
+## Context
+
+ADR-002 fixes the boundary: deterministic engines compute every figure, and a language
+model may only describe figures that already exist. `app/llm/interpreter.py` defines that
+boundary as an `Interpreter` protocol, and the app has shipped with `NullInterpreter` — no
+provider at all — since the AI CFO slice landed. `docs/architecture.md` §5 requires an ADR
+for a new dependency.
+
+## Decision
+
+OpenAI is the narration provider, via the `openai` SDK's Responses API, implemented as
+`OpenAIInterpreter` in `app/llm/openai_interpreter.py`.
+
+It changes nothing about the boundary:
+
+- The prompt is `build_narration_payload`'s output and nothing else — the question plus
+  `label`, `value`, `unit`, `source` per figure. No transaction description, merchant name,
+  account number, or `result_id` reaches the provider.
+- Every failure — connection, auth, rate limit, timeout, content filter, malformed reply —
+  returns `None`, which is the documented `narration_available: false` response the client
+  already renders. A provider outage cannot fail the endpoint.
+- The provider is optional. With no `OPENAI_API_KEY` configured the app runs
+  `NullInterpreter`, which remains what the test suite and local development exercise.
+
+The key is backend-only configuration. It is never sent to the browser, and the frontend
+has no provider credential of any kind.
+
+## Consequences
+
+- `openai==3.14.1` joins `requirements.txt`; the SDK is imported lazily, so a deployment
+  with no key never loads it.
+- The model is configurable (`OPENAI_MODEL`, default `gpt-4o-mini`) because model names
+  change faster than this codebase should.
+- Narration is capped (`max_output_tokens`, three sentences requested) and time-boxed
+  (`OPENAI_TIMEOUT_SECONDS`, default 8) — waiting on the optional half of a response is
+  worse than shipping the figures without it.
+- Cost becomes a function of questions asked. Not modelled here; revisit if it matters.
+
+## Revisit if
+
+The provider is replaced, a second provider is added, or the model is asked to do anything
+beyond narrating figures that were computed before it was called — the last of which would
+reverse ADR-002 and needs its own record.
+
+---
+
+# ADR-011: A more saturated palette, and colour-by-score in the health gauge
+
+**Status:** Accepted
+**Date:** 2026-09-16
+**Deciders:** Project owner
+
+## Context
+
+`docs/design-system.md` §1–§2 built the interface around a deliberately muted, near-
+monochrome palette on the reasoning that "colour is scarce" and reserved for signal, and
+§2.3 states plainly that financial-position quality must never be carried by colour —
+"`--signal-positive` marks the direction of a change, never the quality of a financial
+position" — because a green all-clear "trains the user to skim past it"
+(`specs/dashboard.md`). The financial health score rendered as a bare number, "72 of 100",
+with no colour at all.
+
+The product owner asked for the interface to read as less flat, and specifically for the
+health score to render as a coloured gauge with the percentage inside it, rather than a
+number — i.e. exactly what §2.3 was written to prevent.
+
+## Decision
+
+**Tokens got louder, not fewer.** Every colour is still a named token in `index.css` and
+`tailwind.config.js`, and every text-bearing token still clears 4.5:1 (computed, not
+eyeballed — see the contrast figures below). `--accent`, `--signal-caution`,
+`--signal-critical`, and `--signal-positive` moved to more saturated hues; `--surface` and
+`--surface-sunken` took a light violet tint instead of neutral grey. §1's "everything else
+is deliberately quiet" no longer describes this app; §2's contrast table needs re-deriving
+from the values now in `index.css` rather than the ones printed there.
+
+**A new, separate token family carries position quality: `--score-poor`, `--score-fair`,
+`--score-good`.** They are not a repurposing of `--signal-*` — those keep meaning "state"
+(caution, critical, direction of change) exactly as §2.3 describes, so a future reader
+does not have to wonder whether a signal colour now means two things. The new family is
+used by exactly one component, `ScoreGauge` (`frontend/src/components/ScoreGauge.tsx`),
+and nowhere else. §2.3's rule against colour-coded position quality is reversed for that
+component only, not repealed generally: a spending category, an account balance, or a
+transaction still may not be colour-coded by "goodness".
+
+**Meaning still does not rest on colour alone.** `ScoreGauge` always renders the number and
+a band word ("Needs attention" / "Fair" / "Strong") as text alongside the ring, so the
+component degrades correctly in greyscale or to a screen reader — §2.3's other rule,
+"nothing is conveyed by colour alone," is kept.
+
+**This is not the pie chart §6 forbids.** §6 bans pie charts because a breakdown of
+categories (spending, cash flow) was being forced into slices when it should be a flow or a
+comparison. `ScoreGauge` shows one scalar (0–100) as a circular meter, the same construct
+as a battery or a loading indicator, with nothing decomposed into parts of a whole. The two
+are different chart problems; §6's example (cash flow "rendered as a flow, not a pie
+chart") is unaffected and remains true.
+
+Updated light-mode contrast (`#F8F6FF` surface, `#FFFFFF` surface-raised):
+
+| Token | Value | vs `surface` | vs `surface-raised` |
+|---|---|---|---|
+| `--accent` | `#4338CA` | 7.38:1 | 7.90:1 |
+| `--signal-caution` | `#B45309` | 4.69:1 | 5.02:1 |
+| `--signal-critical` | `#B91C1C` | 6.04:1 | 6.47:1 |
+| `--signal-positive` | `#15803D` | 4.69:1 | 5.02:1 |
+| `--score-poor` | `#DC2626` | 4.51:1 | 4.83:1 |
+| `--score-fair` | `#D97706` | 2.98:1 | 3.19:1 |
+| `--score-good` | `#16A34A` | 3.08:1 | 3.30:1 |
+
+The three score tokens are used only as a ring stroke (a graphical object, WCAG 1.4.11's
+3:1 floor) never as text (WCAG 1.4.3's 4.5:1 floor), which is why they are held to a
+different bar than the text-bearing tokens above them.
+
+## Consequences
+
+- `docs/design-system.md` §2.1's table and §1's framing describe the old palette and need
+  updating to match `index.css`; §2.3 needs a note pointing at this record as the
+  documented exception. Left as a follow-up rather than done in the same change that
+  introduced `ScoreGauge`, since the component shipped first and the docs are catching up.
+- A future component that wants to colour-code "goodness" (a debt, a goal, a budget
+  category) is not authorised by this record. Each one is its own instance of the same
+  question §2.3 raises and gets its own decision, not a blanket reading of this ADR.
+- The chart-series palette in §6 (the four-slot luminance ladder) is unrelated to this
+  decision and unchanged; no chart using it exists in code yet.
+
+## Revisit if
+
+A colour-blind or greyscale audit of `ScoreGauge` finds the band word insufficient without
+the ring's colour, or a second component asks to colour-code position quality — at which
+point the narrow exception this record grants should become a general rule instead of a
+second one-off.

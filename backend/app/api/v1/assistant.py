@@ -3,6 +3,7 @@ from flask import Blueprint, g, jsonify, request
 from app.core.auth import require_auth
 from app.core.errors import ValidationError
 from app.core.extensions import db
+from app.llm.factory import build_interpreter
 from app.services.assistant import AssistantService
 
 bp = Blueprint("assistant", __name__, url_prefix="/assistant")
@@ -22,7 +23,7 @@ def ask():
         raise ValidationError("'question' is required.")
 
     conversation_id = body.get("conversation_id")
-    answer = AssistantService(db.session).ask(
+    answer = AssistantService(db.session, interpreter=build_interpreter()).ask(
         user_id=g.user_id,
         question=question,
         conversation_id=conversation_id,
@@ -71,6 +72,7 @@ def get_conversation(conversation_id):
                         "answer": m.answer,
                         "capability": m.capability,
                         "supported": m.supported,
+                        "narration_available": m.narration_available,
                         "figures": m.figures,
                     }
                     for m in messages

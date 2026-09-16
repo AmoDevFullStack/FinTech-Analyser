@@ -1,9 +1,9 @@
 import { RefreshCw } from "lucide-react";
 
-import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
+import { ScoreGauge } from "@/components/ScoreGauge";
 import { formatDateTime } from "@/lib/dates";
-import { asRate, formatRateAsPercent } from "@/lib/money";
+import { asRate, formatRateAsPercent, scoreAsNumber } from "@/lib/money";
 import type { HealthAssessment } from "@/api/types";
 import { healthComponentLabel } from "./healthComponentLabels";
 
@@ -22,10 +22,7 @@ export function HealthBreakdown({
   return (
     <div className="flex flex-col gap-6">
       <header className="flex items-center justify-between gap-4">
-        <div className="flex items-baseline gap-3">
-          <span className="text-position tabular-nums">{assessment.score}</span>
-          <span className="text-body text-content-secondary">of 100</span>
-        </div>
+        <ScoreGauge value={assessment.score} size={128} label="Financial health score" />
         <Button icon={RefreshCw} onClick={onRefresh} disabled={isRefreshing}>
           {isRefreshing ? "Refreshing…" : "Refresh assessment"}
         </Button>
@@ -48,10 +45,11 @@ export function HealthBreakdown({
                 {formatRateAsPercent(asRate(component.weight))}
               </span>
             </div>
-            <Card className="w-24 items-center gap-0 p-3">
-              <span className="text-figure tabular-nums">{component.score}</span>
-              <span className="text-caption text-content-tertiary">/ 100</span>
-            </Card>
+            <ScoreGauge
+              value={scoreAsNumber(component.score)}
+              size={56}
+              label={healthComponentLabel(component.name)}
+            />
           </div>
         ))}
       </div>

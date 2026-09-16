@@ -2,10 +2,19 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.core.db import DbSession
 from app.models.column_mapping import AccountColumnMapping
+
+_FOR_ACCOUNT = text(
+    """
+    SELECT *
+      FROM account_column_mappings
+     WHERE account_id = :account_id
+       AND user_id = :user_id
+    """
+)
 
 
 class ColumnMappingRepository:
@@ -15,11 +24,10 @@ class ColumnMappingRepository:
         self._session = session
 
     def for_account(self, account_id: UUID, *, user_id: UUID) -> AccountColumnMapping | None:
-        stmt = select(AccountColumnMapping).where(
-            AccountColumnMapping.account_id == account_id,
-            AccountColumnMapping.user_id == user_id,
-        )
-        return self._session.scalars(stmt).first()
+        return self._session.scalars(
+            select(AccountColumnMapping).from_statement(_FOR_ACCOUNT),
+            {"account_id": account_id, "user_id": user_id},
+        ).first()
 
     def remember(
         self, *, user_id: UUID, account_id: UUID, mapping: dict, label: str | None = None

@@ -11,3 +11,4 @@ argon2-cffi==23.1.0
 gunicorn==22.0.0
 python-dotenv==1.0.1
 click==8.1.7
+openai==3.14.1

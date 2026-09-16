@@ -1,14 +1,8 @@
-import { AskPanel } from "@/features/assistant";
+import { ChatView } from "@/features/assistant";
 
+/** A conversation, not a page: it owns the whole viewport and sits outside the app shell,
+ * so the navigation drawer never competes with the thread. See docs/frontend.md §7.
+ */
 export function Assistant() {
-  return (
-    <div className="flex flex-col gap-8">
-      <h1 className="text-title">Ask</h1>
-      <p className="text-body text-content-secondary">
-        Answers are computed by the same engines the rest of this product uses. The figures
-        are the answer; any prose is a description of them.
-      </p>
-      <AskPanel />
-    </div>
-  );
+  return <ChatView />;
 }

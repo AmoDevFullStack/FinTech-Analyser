@@ -2,10 +2,42 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.core.db import DbSession
 from app.models.recommendation import Recommendation, RecommendationStatus
+
+_LIST_FOR_USER = text(
+    """
+    SELECT *
+      FROM recommendations
+     WHERE user_id = :user_id
+       AND (
+         CAST(:status AS recommendation_status_enum) IS NULL
+         OR status = CAST(:status AS recommendation_status_enum)
+       )
+     ORDER BY benefit_amount DESC
+    """
+)
+
+_LATEST_OF_RULE = text(
+    """
+    SELECT *
+      FROM recommendations
+     WHERE user_id = :user_id
+       AND rule_id = :rule_id
+     ORDER BY generated_on DESC, created_at DESC
+    """
+)
+
+_GET_FOR_USER = text(
+    """
+    SELECT *
+      FROM recommendations
+     WHERE id = :recommendation_id
+       AND user_id = :user_id
+    """
+)
 
 
 class RecommendationRepository:
@@ -17,25 +49,24 @@ class RecommendationRepository:
     def list_for_user(
         self, *, user_id: UUID, status: RecommendationStatus | None = RecommendationStatus.ACTIVE
     ) -> list[Recommendation]:
-        stmt = select(Recommendation).where(Recommendation.user_id == user_id)
-        if status is not None:
-            stmt = stmt.where(Recommendation.status == status)
-        stmt = stmt.order_by(Recommendation.benefit_amount.desc())
-        return list(self._session.scalars(stmt))
+        return list(
+            self._session.scalars(
+                select(Recommendation).from_statement(_LIST_FOR_USER),
+                {"user_id": user_id, "status": status.value if status is not None else None},
+            )
+        )
 
     def latest_of_rule(self, *, user_id: UUID, rule_id: str) -> Recommendation | None:
-        stmt = (
-            select(Recommendation)
-            .where(Recommendation.user_id == user_id, Recommendation.rule_id == rule_id)
-            .order_by(Recommendation.generated_on.desc(), Recommendation.created_at.desc())
-        )
-        return self._session.scalars(stmt).first()
+        return self._session.scalars(
+            select(Recommendation).from_statement(_LATEST_OF_RULE),
+            {"user_id": user_id, "rule_id": rule_id},
+        ).first()
 
     def get_for_user(self, recommendation_id: UUID, *, user_id: UUID) -> Recommendation | None:
-        stmt = select(Recommendation).where(
-            Recommendation.id == recommendation_id, Recommendation.user_id == user_id
-        )
-        return self._session.scalars(stmt).first()
+        return self._session.scalars(
+            select(Recommendation).from_statement(_GET_FOR_USER),
+            {"recommendation_id": recommendation_id, "user_id": user_id},
+        ).first()
 
     def add(self, recommendation: Recommendation) -> Recommendation:
         self._session.add(recommendation)

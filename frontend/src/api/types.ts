@@ -342,6 +342,31 @@ export interface AssistantAnswer {
   conversation_id: string | null;
 }
 
+/** GET /assistant/conversations and /assistant/conversations/{id} — docs/api.md §
+ * "Assistant". A stored message keeps the figures it was answered with, so reopening a
+ * conversation shows what was true when it was asked rather than recomputing silently.
+ */
+export interface AssistantConversationSummary {
+  id: string;
+  title: string | null;
+  started_at: string;
+}
+
+export interface AssistantStoredMessage {
+  id: string;
+  asked_at: string;
+  question: string;
+  answer: string | null;
+  capability: string;
+  supported: boolean;
+  narration_available: boolean;
+  figures: AssistantFigure[];
+}
+
+export interface AssistantConversation extends AssistantConversationSummary {
+  messages: AssistantStoredMessage[];
+}
+
 export interface RecurringSeriesRow {
   key: string;
   frequency: string;

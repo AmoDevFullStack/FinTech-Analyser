@@ -198,6 +198,17 @@ to someone else is not transient state.
 Money, dates, and identifiers appear in URLs as they do in the API: identifiers are UUIDs,
 dates are `YYYY-MM-DD`.
 
+Routes sit inside `<Layout>`, which supplies the header and the navigation drawer, with one
+exception: `/ask` renders outside it. Ask is a conversation, not a page — it owns the full
+viewport, carries its own header with a back control, and has no navigation drawer over it.
+A second full-height surface would need the same justification; the default is inside the
+shell. See ADR-009.
+
+Destinations are reached from the drawer behind the header's menu control, not from a row
+of tabs. Adding a destination means adding one entry to `NAV_ITEMS` in
+`components/Layout.tsx` and one route here — there is no per-destination header cost any
+more, which is the point of ADR-009.
+
 ---
 
 ## 8. Testing
