@@ -14,7 +14,7 @@ export function ProjectedValue({ projected }: { projected: Projected<Money> }) {
         {formatMoney(projected.value)}
       </span>
       <span className="text-caption text-content-tertiary">
-        {projected.isStale ? "Stale — " : "Projected "}
+        {projected.isStale ? "Out of date — " : "Projected "}
         {formatDateTime(projected.generatedAt)}
       </span>
     </span>

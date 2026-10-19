@@ -32,9 +32,10 @@ class Scenario(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """
 
     __tablename__ = "scenarios"
+    __table_args__ = {"schema": "analytics"}
 
     user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("identity.users.id"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -42,7 +43,7 @@ class Scenario(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         pg_enum(ScenarioType, name="scenario_type_enum"), nullable=False
     )
     snapshot_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("position_snapshots.id"), nullable=False
+        PGUUID(as_uuid=True), ForeignKey("analytics.position_snapshots.id"), nullable=False
     )
     status: Mapped[ScenarioStatus] = mapped_column(
         pg_enum(ScenarioStatus, name="scenario_status_enum"), nullable=False
@@ -51,9 +52,10 @@ class Scenario(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
 class ScenarioAssumption(UUIDPrimaryKeyMixin, Base):
     __tablename__ = "scenario_assumptions"
+    __table_args__ = {"schema": "analytics"}
 
     scenario_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("scenarios.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("analytics.scenarios.id"), nullable=False, index=True
     )
     key: Mapped[str] = mapped_column(String, nullable=False)
     value: Mapped[str] = mapped_column(String, nullable=False)
@@ -61,9 +63,10 @@ class ScenarioAssumption(UUIDPrimaryKeyMixin, Base):
 
 class ScenarioResult(UUIDPrimaryKeyMixin, Base):
     __tablename__ = "scenario_results"
+    __table_args__ = {"schema": "analytics"}
 
     scenario_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("scenarios.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("analytics.scenarios.id"), nullable=False, index=True
     )
     computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     engine_version: Mapped[str] = mapped_column(String, nullable=False)

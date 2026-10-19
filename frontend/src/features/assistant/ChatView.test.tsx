@@ -6,6 +6,7 @@ import type { AssistantAnswer, AssistantConversation } from "@/api/types";
 import { ChatView } from "@/features/assistant/ChatView";
 
 const mutate = vi.fn();
+const deleteMutate = vi.fn();
 const useConversationsMock = vi.fn();
 const useConversationMock = vi.fn();
 
@@ -13,6 +14,7 @@ vi.mock("@/api/assistant", () => ({
   useAsk: () => ({ mutate, isPending: false, isError: false, error: null }),
   useConversations: () => useConversationsMock(),
   useConversation: (conversationId: string | undefined) => useConversationMock(conversationId),
+  useDeleteConversation: () => ({ mutate: deleteMutate, isPending: false }),
 }));
 
 function answer(overrides: Partial<AssistantAnswer> = {}): AssistantAnswer {
@@ -46,6 +48,7 @@ function send(question: string, result: AssistantAnswer) {
 describe("ChatView", () => {
   beforeEach(() => {
     mutate.mockReset();
+    deleteMutate.mockReset();
     useConversationsMock.mockReset().mockReturnValue({ data: [] });
     useConversationMock.mockReset().mockReturnValue({ data: undefined });
     render(
@@ -67,18 +70,19 @@ describe("ChatView", () => {
 
     expect(screen.getByText("What is my emergency fund worth in months?")).toBeVisible();
     expect(screen.getByText("Emergency fund after")).toBeVisible();
-    expect(screen.getByText("from emergency_fund_engine")).toBeVisible();
+    // The module name is kept on the wire for provenance and never shown — see
+    // features/assistant/figureSources.ts.
+    expect(screen.getByText("from your emergency fund")).toBeVisible();
+    expect(screen.queryByText(/emergency_fund_engine/)).not.toBeInTheDocument();
   });
 
   /** design-system.md §9 and ADR-002: prose is disclosed as generated, and the figures
    * stand without it when no provider answered.
    */
-  it("labels narration as written by the model", () => {
+  it("marks narration as written over the figures rather than as a figure", () => {
     send("What is my emergency fund worth in months?", answer());
 
-    expect(
-      screen.getByText("Written by the language model from the figures above"),
-    ).toBeVisible();
+    expect(screen.getByText("Written from the figures above")).toBeVisible();
   });
 
   it("still renders the figures when no narration is available", () => {
@@ -88,10 +92,8 @@ describe("ChatView", () => {
     );
 
     expect(screen.getByText("Emergency fund after")).toBeVisible();
-    expect(screen.getByText(/Figures only/)).toBeVisible();
-    expect(
-      screen.queryByText("Written by the language model from the figures above"),
-    ).not.toBeInTheDocument();
+    expect(screen.getByText(/written explanation is unavailable/)).toBeVisible();
+    expect(screen.queryByText("Written from the figures above")).not.toBeInTheDocument();
   });
 
   it("sends on Enter and keeps Shift+Enter for a line break", () => {
@@ -108,7 +110,7 @@ describe("ChatView", () => {
     );
   });
 
-  it("renders a small-talk reply with no figures and no 'Figures only' caption", () => {
+  it("renders a small-talk reply with no figures and no missing-explanation caption", () => {
     send(
       "hi",
       answer({
@@ -120,11 +122,11 @@ describe("ChatView", () => {
     );
 
     expect(screen.getByText(/Hi! I can help with/)).toBeVisible();
-    expect(screen.queryByText(/Figures only/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/written explanation is unavailable/)).not.toBeInTheDocument();
     expect(screen.queryByText("Not modelled")).not.toBeInTheDocument();
   });
 
-  it("badges a model-narrated small-talk reply the same as any other narration", () => {
+  it("badges a narrated small-talk reply the same as any other narration", () => {
     send(
       "hello there",
       answer({
@@ -135,7 +137,7 @@ describe("ChatView", () => {
       }),
     );
 
-    expect(screen.getByText("Written by the language model")).toBeVisible();
+    expect(screen.getByText("Written for you")).toBeVisible();
   });
 
   it("states what cannot be modelled rather than approximating", () => {
@@ -222,6 +224,55 @@ describe("ChatView history", () => {
 
     expect(screen.getByText("What is my net worth?")).toBeVisible();
     expect(screen.queryByRole("dialog", { name: "Conversation history" })).not.toBeInTheDocument();
+  });
+
+  it("asks before deleting a conversation, and does nothing if you keep it", () => {
+    useConversationsMock.mockReturnValue({
+      data: [{ id: "conv-2", title: "Net worth check", started_at: "2026-09-10T09:00:00Z" }],
+    });
+    renderChatView();
+
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Net worth check" }));
+
+    expect(deleteMutate).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+    expect(deleteMutate).not.toHaveBeenCalled();
+    expect(screen.getByText("Net worth check")).toBeVisible();
+  });
+
+  it("deletes the conversation once confirmed", () => {
+    useConversationsMock.mockReturnValue({
+      data: [{ id: "conv-2", title: "Net worth check", started_at: "2026-09-10T09:00:00Z" }],
+    });
+    renderChatView();
+
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Net worth check" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(deleteMutate).toHaveBeenCalledWith("conv-2");
+  });
+
+  it("leaves no deleted thread on screen when the open one is the one deleted", () => {
+    useConversationsMock.mockReturnValue({
+      data: [{ id: "conv-2", title: "Net worth check", started_at: "2026-09-10T09:00:00Z" }],
+    });
+    useConversationMock.mockImplementation((conversationId: string | undefined) =>
+      conversationId === "conv-2" ? { data: conversationFixture() } : { data: undefined },
+    );
+    renderChatView();
+
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
+    fireEvent.click(screen.getByText("Net worth check"));
+    expect(screen.getByText("What is my net worth?")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Net worth check" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(screen.queryByText("What is my net worth?")).not.toBeInTheDocument();
   });
 
   it("says there is no history yet when the list is empty", () => {

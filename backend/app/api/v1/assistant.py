@@ -81,3 +81,20 @@ def get_conversation(conversation_id):
         ),
         200,
     )
+
+
+@bp.delete("/conversations/<uuid:conversation_id>")
+@require_auth
+def delete_conversation(conversation_id):
+    """Delete a conversation and its messages.
+
+    204, and 404 for a conversation that is not this user's — the same response as one
+    that does not exist, so the endpoint cannot be used to discover that a given
+    identifier belongs to somebody.
+
+    A hard delete: a transcript holds a question and narration over figures stored
+    elsewhere, so removing it destroys no financial record. See
+    `AssistantService.delete_conversation`.
+    """
+    AssistantService(db.session).delete_conversation(conversation_id, user_id=g.user_id)
+    return "", 204

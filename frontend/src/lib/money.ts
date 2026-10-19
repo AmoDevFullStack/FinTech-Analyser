@@ -50,6 +50,26 @@ export function isNegative(value: Money): boolean {
   return value.trim().startsWith("-");
 }
 
+/** Whether a Decimal string the API sent is exactly zero.
+ *
+ * A string test is not enough: "0", "0.00", "-0.000000" and "0E-6" are all zero and all
+ * spelled differently by the backend's Decimal quantisation, so `value === "0"` is wrong
+ * roughly half the time. This file is the only place that comparison may be made by
+ * narrowing to a number.
+ */
+export function isZeroFigure(value: string): boolean {
+  return Number(value) === 0;
+}
+
+/** A count of months, as the emergency-fund figures report it.
+ *
+ * Six decimal places is the stored precision (NUMERIC(9,6)); one is what a person reads.
+ * Subject to the same rule as Money and Rate: narrowing happens here and nowhere else.
+ */
+export function formatMonths(value: string, { places = 1 }: { places?: number } = {}): string {
+  return Number(value).toFixed(places);
+}
+
 /** A rate narrowed to a 0–100 display width, e.g. for a utilisation bar. Clamped because a
  * visual bar has no meaningful way to render past full, unlike the percentage figure
  * itself (formatRateAsPercent), which is never clamped.

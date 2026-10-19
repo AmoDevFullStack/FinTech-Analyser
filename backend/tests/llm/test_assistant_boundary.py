@@ -14,34 +14,39 @@ from app.models.assistant import AssistantConversation, AssistantMessage
 from app.models.base import Base
 
 # Tables holding real or derived financial state. Model output may not reach any of them.
+# Written schema-qualified, as `Table.fullname` reports them: the `ledger` and `analytics`
+# schemas are the boundary this test is about, so naming a table without its schema would
+# let a second `transactions` in another schema pass unnoticed.
 FINANCIAL_TABLES = {
-    "accounts",
-    "transactions",
-    "debts",
-    "goals",
-    "goal_contributions",
-    "position_snapshots",
-    "forecasts",
-    "forecast_periods",
-    "forecast_accuracy",
-    "health_assessments",
-    "risk_flags",
-    "recommendations",
-    "scenarios",
-    "scenario_assumptions",
-    "scenario_results",
-    "import_batches",
-    "staged_transactions",
+    "ledger.accounts",
+    "ledger.transactions",
+    "ledger.import_batches",
+    "ledger.staged_transactions",
+    "obligations.debts",
+    "obligations.goals",
+    "obligations.goal_contributions",
+    "analytics.position_snapshots",
+    "analytics.forecasts",
+    "analytics.forecast_periods",
+    "analytics.forecast_accuracy",
+    "analytics.health_assessments",
+    "analytics.risk_flags",
+    "analytics.recommendations",
+    "analytics.scenarios",
+    "analytics.scenario_assumptions",
+    "analytics.scenario_results",
 }
 
-# The only tables model-generated prose is permitted to land in.
-NARRATION_TABLES = {"assistant_conversations", "assistant_messages"}
+# The only tables model-generated prose is permitted to land in. They are the whole of the
+# `assistant` schema, which is why that schema exists separately from `analytics`.
+NARRATION_TABLES = {"assistant.conversations", "assistant.messages"}
 
 
 def test_model_output_is_confined_to_the_assistant_transcript_tables() -> None:
-    assert AssistantMessage.__tablename__ in NARRATION_TABLES
-    assert AssistantConversation.__tablename__ in NARRATION_TABLES
+    assert AssistantMessage.__table__.fullname in NARRATION_TABLES
+    assert AssistantConversation.__table__.fullname in NARRATION_TABLES
     assert NARRATION_TABLES.isdisjoint(FINANCIAL_TABLES)
+
 
 
 def test_the_assistant_service_writes_only_to_narration_tables() -> None:
@@ -88,8 +93,8 @@ def test_the_assistant_service_writes_only_to_narration_tables() -> None:
 def test_every_financial_table_named_here_actually_exists() -> None:
     """Guards the guard: a renamed table must not silently drop out of the check."""
     mapped = set(Base.metadata.tables)
-    missing = FINANCIAL_TABLES - mapped
-    assert not missing, f"FINANCIAL_TABLES names tables that no longer exist: {missing}"
+    missing = (FINANCIAL_TABLES | NARRATION_TABLES) - mapped
+    assert not missing, f"This test names tables that no longer exist: {missing}"
 
 
 def test_no_financial_table_has_a_narration_column() -> None:

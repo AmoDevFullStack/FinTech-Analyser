@@ -11,7 +11,7 @@ from app.models.account import Account
 _LIST_FOR_USER = text(
     """
     SELECT *
-      FROM accounts
+      FROM ledger.accounts
      WHERE user_id = :user_id
        AND deleted_at IS NULL
        AND (CAST(:include_archived AS boolean) OR archived_at IS NULL)
@@ -21,7 +21,7 @@ _LIST_FOR_USER = text(
 _GET_FOR_USER = text(
     """
     SELECT *
-      FROM accounts
+      FROM ledger.accounts
      WHERE id = :account_id
        AND user_id = :user_id
        AND deleted_at IS NULL

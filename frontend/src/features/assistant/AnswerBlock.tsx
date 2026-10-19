@@ -2,6 +2,7 @@ import { Sparkles } from "lucide-react";
 
 import type { AssistantFigure } from "@/api/types";
 import { Chip } from "@/components/Chip";
+import { figureSourceLabel } from "@/features/assistant/figureSources";
 
 /** ADR-002 and design-system.md §9: the figures are authoritative and the narration is
  * presentation. So the figures render FIRST and always, and the prose renders after them,
@@ -12,7 +13,9 @@ function FigureRow({ figure }: { figure: AssistantFigure }) {
     <li className="flex items-baseline justify-between gap-4 py-3">
       <div className="flex flex-col gap-0.5">
         <span className="text-body">{figure.label}</span>
-        <span className="text-caption text-content-tertiary">from {figure.source}</span>
+        <span className="text-caption text-content-tertiary">
+          from {figureSourceLabel(figure.source)}
+        </span>
       </div>
       <span className="font-ui text-figure tabular-nums">
         {figure.unit === "rand" ? "R" : ""}
@@ -67,14 +70,14 @@ export function AnswerBlock({
           <div className="flex flex-col gap-2 rounded-lg bg-surface-sunken p-4">
             <span className="inline-flex items-center gap-1.5 text-caption text-content-secondary">
               <Sparkles size={13} strokeWidth={2} aria-hidden="true" />
-              Written by the language model from the figures above
+              Written from the figures above
             </span>
             <p className="text-body">{answer}</p>
           </div>
         ) : (
           <p className="text-caption text-content-tertiary">
-            Figures only — no narration is available. Every number above was computed by the
-            named engine, so the answer is complete without it.
+            The written explanation is unavailable right now. Every number above is worked
+            out from your own records, so the answer is complete without it.
           </p>
         )
       ) : null}
@@ -87,7 +90,7 @@ export function AnswerBlock({
           <div className="flex flex-col gap-2 rounded-lg bg-surface-sunken p-4">
             <span className="inline-flex items-center gap-1.5 text-caption text-content-secondary">
               <Sparkles size={13} strokeWidth={2} aria-hidden="true" />
-              Written by the language model
+              Written for you
             </span>
             <p className="text-body">{answer}</p>
           </div>

@@ -18,14 +18,17 @@ class AccountColumnMapping(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     wrong guesses helps nobody.
     """
 
-    __tablename__ = "account_column_mappings"
-    __table_args__ = (UniqueConstraint("account_id", name="uq_account_column_mapping"),)
+    __tablename__ = "column_mappings"
+    __table_args__ = (
+        UniqueConstraint("account_id", name="uq_account_column_mapping"),
+        {"schema": "ledger"},
+    )
 
     user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("identity.users.id"), nullable=False, index=True
     )
     account_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False
+        PGUUID(as_uuid=True), ForeignKey("ledger.accounts.id"), nullable=False
     )
     mapping: Mapped[dict] = mapped_column(JSONB, nullable=False)
     label: Mapped[str | None] = mapped_column(String, nullable=True)

@@ -10,7 +10,7 @@ from app.models.column_mapping import AccountColumnMapping
 _FOR_ACCOUNT = text(
     """
     SELECT *
-      FROM account_column_mappings
+      FROM ledger.column_mappings
      WHERE account_id = :account_id
        AND user_id = :user_id
     """

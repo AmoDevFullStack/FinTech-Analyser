@@ -59,7 +59,33 @@ export function useCreateDebt() {
       // A debt change moves the health score, the dashboard total debt figure, and marks
       // the forecast stale — see DebtService._sync_position.
       queryClient.invalidateQueries({ queryKey: ["position"] });
-      queryClient.invalidateQueries({ queryKey: ["health"] });
+      queryClient.invalidateQueries({ queryKey: ["health-assessment"] });
+      queryClient.invalidateQueries({ queryKey: ["forecast"] });
+    },
+  });
+}
+
+export interface UpdateDebtInput {
+  debt_type?: DebtType;
+  current_balance?: string;
+  annual_rate?: string;
+  minimum_payment?: string;
+  instalment?: string;
+  term_months?: string;
+}
+
+export function useUpdateDebt() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ debtId, data }: { debtId: string; data: UpdateDebtInput }) =>
+      api.patch<Debt>(`/debts/${debtId}`, data),
+    onSuccess: (_debt, { debtId }) => {
+      queryClient.invalidateQueries({ queryKey: ["debts"] });
+      // Balance, rate, and payment all change the schedule and the strategy comparison,
+      // not just the row — see DebtService._sync_position for the server side of this.
+      queryClient.invalidateQueries({ queryKey: ["debts", debtId] });
+      queryClient.invalidateQueries({ queryKey: ["position"] });
+      queryClient.invalidateQueries({ queryKey: ["health-assessment"] });
       queryClient.invalidateQueries({ queryKey: ["forecast"] });
     },
   });
@@ -72,7 +98,8 @@ export function useDeleteDebt() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["debts"] });
       queryClient.invalidateQueries({ queryKey: ["position"] });
-      queryClient.invalidateQueries({ queryKey: ["health"] });
+      queryClient.invalidateQueries({ queryKey: ["health-assessment"] });
+      queryClient.invalidateQueries({ queryKey: ["forecast"] });
     },
   });
 }

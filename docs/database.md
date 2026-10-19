@@ -11,6 +11,38 @@ financial columns is tested against a copy of realistic data before it runs anyw
 
 ## 1. Rules that apply to every table
 
+**Every table lives in a subsystem schema, never in `public`.** A query names the
+subsystem it reads: `ledger.transactions`, `assistant.conversations`,
+`analytics.forecasts`. The schemas, and what belongs in each, are defined in
+`backend/app/models/schemas.py`:
+
+| Schema | Holds | Tables |
+|---|---|---|
+| `identity` | who the user is | users |
+| `ledger` | banking fact | accounts, categories, transactions, import_batches, staged_transactions, column_mappings |
+| `obligations` | what is owed and saved towards | debts, goals, goal_contributions |
+| `analytics` | computed output, all of it derivable | position_snapshots, health_assessments, forecasts, forecast_periods, forecast_accuracy, risk_flags, recommendations, scenarios, scenario_assumptions, scenario_results |
+| `assistant` | the question-and-answer transcript | conversations, messages |
+| `audit` | append-only record of what happened | logs, events |
+| `shared` | Postgres enum types and `set_updated_at()`. No tables. | — |
+
+A new table declares its schema in `__table_args__` or it does not merge —
+`tests/models/test_schema_namespaces.py` fails the build for one that does not. The
+matching rules:
+
+- **Foreign keys are written schema-qualified**: `ForeignKey("identity.users.id")`.
+- **Raw SQL names the schema too**: `FROM ledger.transactions`, never `FROM transactions`.
+  Nothing resolves through `search_path`, because search_path is not the same in psql, in
+  the application connection, and in Alembic, and that difference is how the same object
+  ends up created twice.
+- **New triggers call `shared.set_updated_at()`**, qualified, for the same reason.
+- `citext` stays in `public`: an extension is database-wide rather than owned by a
+  subsystem, and `public` is where every tool looks for one.
+
+Revision 0014 moved the existing tables with `ALTER TABLE ... SET SCHEMA`, which carries
+indexes, constraints, triggers, and data across without rewriting a row.
+
+
 **Money is `NUMERIC(15, 2)`.** Rates and ratios are `NUMERIC(9, 6)`. Never `DOUBLE
 PRECISION`, never `REAL`, never a float anywhere in a financial column. See ADR-001.
 
@@ -123,6 +155,10 @@ The highest-volume table. Indexing decisions here matter more than anywhere else
 | recurrence_group_id | UUID NULL | links instances of one recurring series |
 | category_confidence | NUMERIC(9,6) NULL | null when user-set |
 | category_set_by_user | BOOLEAN | corrections are never overwritten |
+| payment_method | payment_method_enum NULL | how the money moved |
+| spending_purpose | spending_purpose_enum NULL | what it was for |
+| merchant | TEXT NULL | counterparty, mechanics stripped |
+| purpose_confidence | NUMERIC(9,6) NULL | how sure the purpose is |
 | import_batch_id | UUID NULL | FK, for undoing an import |
 | external_id | TEXT NULL | institution's identifier where supplied |
 | fingerprint | TEXT | deduplication hash |
@@ -137,9 +173,24 @@ reliable way to produce a wrong net figure.
 `normalised_description`. Unique partial index on non-deleted rows. It catches exact
 re-imports; near-duplicates go through the matching flow in `specs/transactions.md`.
 
+`payment_method`, `spending_purpose`, and `merchant` are what the statement line said, and
+are kept separate from `category_id`, which is what the user's chart of accounts calls it.
+Both are needed: a category can be renamed or corrected by the user, while these three are
+evidence. Keeping them apart means a changed rule table can be re-run over history without
+destroying corrections, and a correction never rewrites the evidence it was made against.
+
+All four are nullable and were not backfilled by migration 0013. Re-running a rule table
+over existing history moves figures a user has already seen, so it happens only when asked
+for, through `POST /transactions/reclassify`.
+
+The same four columns exist on `staged_transactions`, because detection runs at staging:
+the impact preview a user approves has to be computed from the classification the committed
+rows will carry.
+
 Indexes: `(user_id, occurred_on DESC)` for history, `(account_id, occurred_on)` for balance
 derivation, `(user_id, category_id, occurred_on)` for category analysis,
-`(recurrence_group_id)` for series lookup.
+`(recurrence_group_id)` for series lookup, `(merchant)` for "everything I have paid this
+shop", and `(user_id, spending_purpose)` for the cash-flow groupings.
 
 ### Category
 
@@ -267,9 +318,16 @@ because forecast history is what makes accuracy measurement possible (requiremen
 
 ### HealthAssessment
 
-Score, computed date, and a JSONB breakdown of component contributions. The breakdown is
-not optional — requirement 10 demands the score be inspectable, and a score stored without
-its components cannot be explained after the fact.
+The month assessed (`month`, `YYYY-MM`), the date it was computed, the score, and a JSONB
+breakdown of component contributions. The breakdown is not optional — requirement 10
+demands the score be inspectable, and a score stored without its components cannot be
+explained after the fact.
+
+One assessment per user per month, enforced by `uq_health_assessment_month`. Re-assessing a
+month corrects that row rather than adding a second opinion about the same period — the
+same rule `forecast_accuracy` follows. `month` is what the assessment is about and
+`computed_at` is when it ran; keeping both is what makes "is this improving?" answerable,
+which a log of run times is not.
 
 ### RiskFlag
 

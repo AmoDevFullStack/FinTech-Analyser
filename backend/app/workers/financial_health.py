@@ -13,4 +13,12 @@ from app.services.financial_health import FinancialHealthService
 
 
 def assess_financial_health(session: DbSession, *, user_id: UUID) -> HealthAssessment:
-    return FinancialHealthService(session).assess(user_id=user_id)
+    """Score the current month, and re-score the months behind it.
+
+    Both, not just the current month: an imported statement usually carries months that
+    were already scored against transactions which had not arrived yet, and a series whose
+    older points are stale is worse than no series. Returns the most recent month, which is
+    what the caller shows.
+    """
+    assessed = FinancialHealthService(session).assess_recent(user_id=user_id)
+    return assessed[-1]

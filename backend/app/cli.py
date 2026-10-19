@@ -9,16 +9,20 @@ import click
 from flask import Flask
 
 from app.core.auth import hash_password
+from app.core.events import MAX_ATTEMPTS, dispatch_pending
 from app.core.extensions import db
 from app.models.account import Account, AccountType, BalanceSource
-from app.models.category import Category, CategoryKind
+from app.repositories.domain_event import DomainEventRepository
 from app.models.transaction import Direction, Transaction
 from app.models.user import User
+from app.services.category_seed import ensure_system_categories
 from app.services.import_service import make_fingerprint, normalise_description
+from app.services.spending_insight import SpendingInsightService
 
 
 def register(app: Flask) -> None:
     app.cli.add_command(seed)
+    app.cli.add_command(events)
 
 
 @click.group()
@@ -65,19 +69,30 @@ def seed_demo() -> None:
     db.session.add_all([cheque, vehicle_finance])
     db.session.flush()
 
-    income = Category(name="Salary", kind=CategoryKind.INCOME)
-    essential = Category(name="Groceries", kind=CategoryKind.ESSENTIAL)
-    discretionary = Category(name="Dining out", kind=CategoryKind.DISCRETIONARY)
-    db.session.add_all([income, essential, discretionary])
+    # The full system chart of accounts, not three hand-made rows: a demo whose categories
+    # do not match a real user's produces a dashboard that cannot be compared with one.
+    categories = {c.name: c for c in ensure_system_categories(db.session)}
     db.session.flush()
+
+    income = categories["Salary"]
+    essential = categories["Groceries"]
+    discretionary = categories["Dining out"]
+    rent = categories["Rent"]
+    insurance = categories["Insurance"]
 
     transactions = []
     for month_offset in range(18):
         occurred_on = date.today().replace(day=1) - timedelta(days=30 * month_offset)
         for label, category, amount in (
-            ("Salary", income, Decimal("52000.00")),
-            ("Groceries", essential, Decimal("-31400.00")),
-            ("Dining out", discretionary, Decimal("-9800.00")),
+            ("SALARY DEPOSIT ACME PTY LTD", income, Decimal("52000.00")),
+            # Rent as a debit order, which is how it appears on a real statement and what
+            # the detection engine is built to recognise. Without a rent line the demo
+            # understates essential spending by the largest number in most budgets, and
+            # the emergency-fund figure derived from it is correspondingly wrong.
+            ("DEBIT ORDER RENT PROPERTY GROUP", rent, Decimal("-14500.00")),
+            ("DEBIT ORDER OUTSURANCE PREMIUM", insurance, Decimal("-1850.00")),
+            ("POS PURCHASE WOOLWORTHS CLAREMONT", essential, Decimal("-16900.00")),
+            ("CARD PURCHASE UBER EATS", discretionary, Decimal("-9800.00")),
         ):
             normalised = normalise_description(label)
             transactions.append(
@@ -102,6 +117,11 @@ def seed_demo() -> None:
                 )
             )
     db.session.add_all(transactions)
+    db.session.flush()
+
+    insight = SpendingInsightService(db.session)
+    for transaction in transactions:
+        insight.classify_transaction(transaction)
     db.session.commit()
 
     from app.services.financial_health import FinancialHealthService
@@ -112,3 +132,42 @@ def seed_demo() -> None:
 
     click.echo(f"Demo user created: {email} / {password}")
     click.echo(f"Financial health score: {assessment.score}/100")
+
+
+@click.group()
+def events() -> None:
+    """Domain event commands. See app/core/events.py."""
+
+
+@events.command("drain")
+@click.option("--limit", default=100, show_default=True, help="Most events to process.")
+def events_drain(limit: int) -> None:
+    """Run the handlers for events still waiting, across every user.
+
+    Dispatch normally happens in the request that recorded the event. This is for the
+    cases where that did not finish it: a handler that failed and is being retried after a
+    fix, or a backlog left by a process that was restarted mid-pass.
+    """
+    report = dispatch_pending(db.session, user_id=None, limit=limit)
+    click.echo(f"processed {report.processed}, failed {report.failed}")
+
+
+@events.command("failed")
+def events_failed() -> None:
+    """List events that gave up after MAX_ATTEMPTS, with the error that stopped them.
+
+    This is the command that makes a failing handler visible: dispatch never fails a user's
+    request over a recomputation, so without somewhere to look, a handler that is broken
+    for everyone would show up only as figures quietly not updating.
+    """
+    stuck = DomainEventRepository(db.session).failed(max_attempts=MAX_ATTEMPTS)
+    if not stuck:
+        click.echo("No events have exhausted their attempts.")
+        return
+
+    for event in stuck:
+        click.echo(
+            f"{event.occurred_at.isoformat()}  {event.name}  user={event.user_id}  "
+            f"attempts={event.attempts}  {event.last_error}"
+        )
+    click.echo(f"{len(stuck)} event(s) stopped after {MAX_ATTEMPTS} attempts.")

@@ -11,7 +11,7 @@ from app.models.position_snapshot import PositionSnapshot
 _LATEST_FOR_USER = text(
     """
     SELECT *
-      FROM position_snapshots
+      FROM analytics.position_snapshots
      WHERE user_id = :user_id
      ORDER BY captured_at DESC
     """
@@ -20,7 +20,7 @@ _LATEST_FOR_USER = text(
 _GET_FOR_USER = text(
     """
     SELECT *
-      FROM position_snapshots
+      FROM analytics.position_snapshots
      WHERE id = :snapshot_id
        AND user_id = :user_id
     """

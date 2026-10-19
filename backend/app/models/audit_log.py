@@ -21,10 +21,11 @@ class AuditLog(UUIDPrimaryKeyMixin, Base):
     at the repository layer or anywhere else.
     """
 
-    __tablename__ = "audit_logs"
+    __tablename__ = "logs"
+    __table_args__ = {"schema": "audit"}
 
     user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("identity.users.id"), nullable=False, index=True
     )
     action: Mapped[str] = mapped_column(String, nullable=False)
     entity_type: Mapped[str] = mapped_column(String, nullable=False)

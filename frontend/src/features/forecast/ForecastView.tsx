@@ -60,15 +60,17 @@ export function ForecastView() {
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="text-title">Forecast</h2>
         <div className="flex gap-2">
-          {data.is_stale ? <Chip>Stale — inputs changed since it was generated</Chip> : null}
+          {data.is_stale ? (
+            <Chip>Out of date — your figures have changed since this was worked out</Chip>
+          ) : null}
           {data.is_low_confidence ? (
-            <Chip>Low confidence — {data.months_observed} months of history</Chip>
+            <Chip>Less certain — based on {data.months_observed} months of history</Chip>
           ) : null}
         </div>
       </div>
 
       <p className="text-caption text-content-tertiary">
-        Generated {formatDateTime(data.generated_at)} by engine {data.engine_version}.
+        Worked out {formatDateTime(data.generated_at)}.
         Inflation {formatRateAsPercent(data.assumptions.inflation_annual as never)}, salary
         growth {formatRateAsPercent(data.assumptions.salary_growth_annual as never)}. These
         are assumptions, not facts.

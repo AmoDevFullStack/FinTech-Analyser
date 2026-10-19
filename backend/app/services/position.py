@@ -57,6 +57,12 @@ DEBT_TYPES = {
 }
 
 
+def _month_end(month_start: date) -> date:
+    if month_start.month == 12:
+        return date(month_start.year + 1, 1, 1) - timedelta(days=1)
+    return date(month_start.year, month_start.month + 1, 1) - timedelta(days=1)
+
+
 def _owed(account) -> Decimal:
     if account.account_type is AccountType.CREDIT_CARD:
         return max(Decimal("0"), -account.current_balance)
@@ -83,9 +89,9 @@ class PositionService:
         total_debt = sum(debt_balances, Decimal("0"))
         computed_net_worth = net_worth(asset_values=asset_values, debt_balances=debt_balances)
 
-        month_start = as_of.replace(day=1)
+        month_start, month_end = self.baseline_month(user_id=user_id, as_of=as_of)
         sums = self.category_kind_sums(
-            user_id=user_id, accounts=accounts, since=month_start, until=as_of
+            user_id=user_id, accounts=accounts, since=month_start, until=month_end
         )
 
         return FinancialPosition(
@@ -97,6 +103,32 @@ class PositionService:
             monthly_essential=sums[CategoryKind.ESSENTIAL],
             monthly_discretionary=sums[CategoryKind.DISCRETIONARY],
         )
+
+    def baseline_month(
+        self, *, user_id: UUID, as_of: date | None = None
+    ) -> tuple[date, date]:
+        """The month every monthly figure here is measured over.
+
+        The most recent month that has transactions, not the current calendar month. On the
+        3rd of a month the current month holds three days, and for anyone whose last
+        statement was a while ago it holds nothing at all — which made income, essential
+        and discretionary spending zero, and with them emergency cover (savings ÷ nothing),
+        cash-flow margin, savings rate and debt-to-income. A user who added an emergency
+        fund watched their score not move, correctly and uselessly.
+
+        A month is a real measurement or it is not one. Where there are no transactions at
+        all, this falls back to the current month, which then legitimately reads as zero:
+        that is "we have nothing to go on", which is true and is displayed as such.
+
+        The end of the window is capped at `as_of`, so the current month is reported as far
+        as it has actually run rather than projected to its end.
+        """
+        as_of = as_of or date.today()
+        span = self._transactions.activity_span(user_id=user_id)
+        anchor = span.last_on if span.last_on is not None and span.last_on <= as_of else as_of
+
+        month_start = anchor.replace(day=1)
+        return month_start, min(_month_end(month_start), as_of)
 
     def category_kind_sums(
         self, *, user_id: UUID, accounts: list[Account], since: date, until: date
@@ -131,6 +163,8 @@ class PositionService:
 
     def capture_snapshot(self, *, user_id: UUID) -> PositionSnapshot:
         position = self.compute_current(user_id=user_id)
+        baseline_start, _ = self.baseline_month(user_id=user_id, as_of=position.as_of)
+        span = self._transactions.activity_span(user_id=user_id)
         cash_flow = cash_flow_summary(
             income=position.monthly_income,
             essential=position.monthly_essential,
@@ -157,6 +191,15 @@ class PositionService:
                 # (specs/financial-health.md) independent of when a position was captured.
                 "projected_cash_flow": str(cash_flow.remaining),
                 "emergency_fund_months": str(fund_months),
+                # What the monthly figures above were measured over, and how much history
+                # stands behind them. A figure derived from one month of imported statements
+                # and a figure derived from eighteen are not the same claim, and a reader
+                # deciding whether to act on one is entitled to know which they are looking
+                # at. See `baseline_month`.
+                "baseline_month": f"{baseline_start.year:04d}-{baseline_start.month:02d}",
+                "months_of_history": span.months_with_activity,
+                "transactions_counted": span.transaction_count,
+                "last_transaction_on": span.last_on.isoformat() if span.last_on else None,
                 "upcoming_obligations": self._upcoming_obligations(
                     user_id=user_id, as_of=position.as_of
                 ),
@@ -217,6 +260,10 @@ class PositionService:
                 "monthly_discretionary": None,
                 "projected_cash_flow": None,
                 "emergency_fund_months": None,
+                "baseline_month": None,
+                "months_of_history": 0,
+                "transactions_counted": 0,
+                "last_transaction_on": None,
                 "health_score": None,
                 "health_generated_at": None,
                 "health_score_change": None,
@@ -227,11 +274,16 @@ class PositionService:
             }
 
         extra = snapshot.position
-        # limit=2: specs/dashboard.md region 4 wants a trend arrow and the single largest
-        # contributing factor ON the dashboard, and the region's Inputs say the dashboard
-        # issues exactly one API call — so both ride along in this one payload rather
-        # than needing a second GET /health-assessment/history round trip.
-        recent_health = HealthAssessmentRepository(self._session).history_for_user(
+        # The last two months' scores: specs/dashboard.md region 4 wants a trend arrow and
+        # the single largest contributing factor ON the dashboard, and the region's Inputs
+        # say the dashboard issues exactly one API call — so both ride along in this one
+        # payload rather than needing a second GET /health-assessment/months round trip.
+        #
+        # Two months, not the two most recently computed rows. Those are not the same thing
+        # since scores became month-by-month: re-running an assessment writes two fresh
+        # rows for two different periods, and comparing them by computed_at could put a
+        # month against itself and report a change of zero.
+        recent_health = HealthAssessmentRepository(self._session).recent_for_user(
             user_id=user_id, limit=2
         )
         health = recent_health[0] if recent_health else None
@@ -247,6 +299,13 @@ class PositionService:
             "monthly_discretionary": str(snapshot.monthly_discretionary),
             "projected_cash_flow": extra["projected_cash_flow"],
             "emergency_fund_months": extra["emergency_fund_months"],
+            # `.get` rather than `[...]`: snapshots captured before these were recorded are
+            # still perfectly good snapshots, and a dashboard that 500s on one is worse than
+            # a dashboard that says it does not know.
+            "baseline_month": extra.get("baseline_month"),
+            "months_of_history": extra.get("months_of_history", 0),
+            "transactions_counted": extra.get("transactions_counted", 0),
+            "last_transaction_on": extra.get("last_transaction_on"),
             "health_score": health.score if health else None,
             "health_generated_at": health.computed_at.isoformat() if health else None,
             "health_score_change": (

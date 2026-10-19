@@ -541,3 +541,26 @@ class AssistantService:
         if conversation is None:
             raise NotFoundError("No conversation with that identifier exists for this user.")
         return conversation, self._conversations.messages_for(conversation.id, user_id=user_id)
+
+    def delete_conversation(self, conversation_id: UUID, *, user_id: UUID) -> None:
+        """Delete a thread and everything in it.
+
+        A hard delete, unlike the financial tables. docs/database.md §1 keeps history where
+        history matters, and a transcript is not that: it holds a question, and narration
+        over figures that are stored elsewhere and recomputed on every ask (ADR-002).
+        Deleting it destroys no financial record, and a user who asked for a conversation to
+        be gone means gone — the same reasoning that has scenarios hard delete.
+        """
+        conversation = self._conversations.get_for_user(conversation_id, user_id=user_id)
+        if conversation is None:
+            raise NotFoundError("No conversation with that identifier exists for this user.")
+
+        self._conversations.delete_for_user(conversation_id, user_id=user_id)
+
+        # Detach the instance this method loaded, before the commit expires it. The rows
+        # are gone, so a later attribute read on it would re-query and raise
+        # ObjectDeletedError — an error about session bookkeeping, raised at whichever
+        # unrelated line happened to touch `conversation.title` next. Expunged, it keeps
+        # the values it was loaded with, which is what a caller reporting "deleted X" needs.
+        self._session.expunge(conversation)
+        self._session.commit()

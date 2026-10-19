@@ -8,7 +8,11 @@ flask-limiter==3.8.0
 redis==5.0.8
 rq==1.16.2
 argon2-cffi==23.1.0
+pyjwt==2.9.0
+pydantic==2.13.5
 gunicorn==22.0.0
 python-dotenv==1.0.1
 click==8.1.7
 openai==3.14.1
+# Statement PDFs: text-layer extraction only, no OCR. See app/services/pdf_statements.py.
+pdfplumber==0.11.4

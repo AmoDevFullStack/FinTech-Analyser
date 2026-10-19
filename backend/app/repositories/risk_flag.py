@@ -10,11 +10,11 @@ from app.models.risk_flag import RiskFlag, RiskStatus
 _LIST_FOR_USER = text(
     """
     SELECT *
-      FROM risk_flags
+      FROM analytics.risk_flags
      WHERE user_id = :user_id
        AND (
-         CAST(:status AS risk_status_enum) IS NULL
-         OR status = CAST(:status AS risk_status_enum)
+         CAST(:status AS shared.risk_status_enum) IS NULL
+         OR status = CAST(:status AS shared.risk_status_enum)
        )
      ORDER BY detected_on DESC
     """
@@ -23,7 +23,7 @@ _LIST_FOR_USER = text(
 _LATEST_OF_TYPE = text(
     """
     SELECT *
-      FROM risk_flags
+      FROM analytics.risk_flags
      WHERE user_id = :user_id
        AND risk_type = :risk_type
      ORDER BY detected_on DESC, created_at DESC
@@ -33,7 +33,7 @@ _LATEST_OF_TYPE = text(
 _GET_FOR_USER = text(
     """
     SELECT *
-      FROM risk_flags
+      FROM analytics.risk_flags
      WHERE id = :flag_id
        AND user_id = :user_id
     """

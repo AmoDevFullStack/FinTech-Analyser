@@ -28,6 +28,31 @@ class Config:
 
     LOGIN_RATE_LIMIT: str = "5 per 15 minutes"
 
+    # JWT (docs/api.md, "Authentication"). The session cookie above is still issued and
+    # still accepted, because the browser client and the e2e suite were built against it;
+    # a bearer token is the additional path, for clients that cannot hold a cookie.
+    #
+    # JWT_SECRET_KEY defaults to SECRET_KEY rather than being separately required, so an
+    # existing deployment keeps working after this change. Setting it separately is the
+    # better posture: rotating the signing key then does not invalidate every session
+    # cookie at the same time.
+    JWT_SECRET_KEY: str = field(
+        default_factory=lambda: os.environ.get("JWT_SECRET_KEY") or _env("SECRET_KEY")
+    )
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ISSUER: str = "financial-digital-twin"
+    # Fifteen minutes. An access token cannot be revoked before it expires, so its lifetime
+    # IS the revocation window — every minute added here is a minute a stolen token keeps
+    # working after a logout.
+    JWT_ACCESS_TTL_SECONDS: int = field(
+        default_factory=lambda: int(os.environ.get("JWT_ACCESS_TTL_SECONDS", "900"))
+    )
+    # Thirty days. The refresh token is revocable (see app/core/tokens.py), so a long life
+    # here costs far less than a long-lived access token.
+    JWT_REFRESH_TTL_SECONDS: int = field(
+        default_factory=lambda: int(os.environ.get("JWT_REFRESH_TTL_SECONDS", str(30 * 86400)))
+    )
+
     # Narration provider (ADR-002). Optional by design: with no key the app runs
     # NullInterpreter and the assistant returns figures with `narration_available: false`,
     # which is the path requirement 12 keeps working and the one developed against.
@@ -61,6 +86,7 @@ class TestConfig(Config):
     REDIS_URL: str = "redis://localhost:6379/1"
     SESSION_COOKIE_SECURE: bool = False
     TESTING: bool = True
+    JWT_SECRET_KEY: str = "test-secret"
     # No test ever calls a provider. Blank here regardless of the developer's environment,
     # so a key exported for local use cannot make the suite hit the network.
     OPENAI_API_KEY: str = ""

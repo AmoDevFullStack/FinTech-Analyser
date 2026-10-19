@@ -32,12 +32,13 @@ class Debt(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """
 
     __tablename__ = "debts"
+    __table_args__ = {"schema": "obligations"}
 
     user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("identity.users.id"), nullable=False, index=True
     )
     account_id: Mapped[UUID | None] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("accounts.id"), nullable=True
+        PGUUID(as_uuid=True), ForeignKey("ledger.accounts.id"), nullable=True
     )
     debt_type: Mapped[DebtType] = mapped_column(pg_enum(DebtType, name="debt_type_enum"), nullable=False)
     original_principal: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)

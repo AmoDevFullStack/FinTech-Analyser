@@ -48,3 +48,24 @@ export function useConversation(conversationId: string | undefined) {
     enabled: Boolean(conversationId),
   });
 }
+
+/** Delete a conversation and its messages.
+ *
+ * A hard delete server-side: a transcript holds a question and narration over figures that
+ * live elsewhere, so removing it destroys no financial record.
+ *
+ * The list is refetched rather than patched, and the deleted thread's own cache entry is
+ * removed outright — leaving it would let a stale thread reappear if something still held
+ * its id.
+ */
+export function useDeleteConversation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: string) =>
+      api.delete<void>(`/assistant/conversations/${conversationId}`),
+    onSuccess: (_result, conversationId) => {
+      queryClient.removeQueries({ queryKey: ["assistant", "conversation", conversationId] });
+      queryClient.invalidateQueries({ queryKey: ["assistant", "conversations"] });
+    },
+  });
+}

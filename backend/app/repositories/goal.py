@@ -11,7 +11,7 @@ from app.models.goal import Goal, GoalContribution
 _LIST_FOR_USER = text(
     """
     SELECT *
-      FROM goals
+      FROM obligations.goals
      WHERE user_id = :user_id
        AND deleted_at IS NULL
      ORDER BY priority, target_date
@@ -21,7 +21,7 @@ _LIST_FOR_USER = text(
 _GET_FOR_USER = text(
     """
     SELECT *
-      FROM goals
+      FROM obligations.goals
      WHERE id = :goal_id
        AND user_id = :user_id
        AND deleted_at IS NULL
@@ -31,7 +31,7 @@ _GET_FOR_USER = text(
 _CONTRIBUTIONS_FOR = text(
     """
     SELECT *
-      FROM goal_contributions
+      FROM obligations.goal_contributions
      WHERE goal_id = :goal_id
        AND user_id = :user_id
        AND (CAST(:since AS date) IS NULL OR occurred_on >= CAST(:since AS date))

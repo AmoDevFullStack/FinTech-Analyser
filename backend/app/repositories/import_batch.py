@@ -11,7 +11,7 @@ from app.models.import_batch import ImportBatch, StagedTransaction
 _GET_FOR_USER = text(
     """
     SELECT *
-      FROM import_batches
+      FROM ledger.import_batches
      WHERE id = :batch_id
        AND user_id = :user_id
     """
@@ -20,14 +20,14 @@ _GET_FOR_USER = text(
 _STAGED_FOR = text(
     """
     SELECT *
-      FROM staged_transactions
+      FROM ledger.staged_transactions
      WHERE import_batch_id = :batch_id
     """
 )
 
 _CLEAR_STAGED = text(
     """
-    DELETE FROM staged_transactions
+    DELETE FROM ledger.staged_transactions
      WHERE import_batch_id = :batch_id
     """
 )

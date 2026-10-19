@@ -56,7 +56,7 @@ export function AccountRow({ account }: { account: Account }) {
               {account.balance_source === "manual" ? (
                 <Chip icon={PencilLine}>Manual</Chip>
               ) : null}
-              {account.is_manual_balance_stale ? <Chip icon={Clock}>Stale</Chip> : null}
+              {account.is_manual_balance_stale ? <Chip icon={Clock}>Needs updating</Chip> : null}
             </div>
           </div>
         </div>

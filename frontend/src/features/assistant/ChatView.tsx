@@ -3,7 +3,12 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useAsk, useConversation, useConversations } from "@/api/assistant";
+import {
+  useAsk,
+  useConversation,
+  useConversations,
+  useDeleteConversation,
+} from "@/api/assistant";
 import type { AssistantAnswer } from "@/api/types";
 import { AnswerBlock } from "@/features/assistant/AnswerBlock";
 import { HistoryDrawer } from "@/features/assistant/HistoryDrawer";
@@ -17,8 +22,11 @@ const SUGGESTIONS = [
 /** design-system.md §9: generation feedback is specific, and the two-stage boundary
  * between computing and narrating is made visible while the reader waits. These are the
  * two stages, in order — not a generic spinner.
+ *
+ * Worded for the person waiting, not for us. What they need to know is that the numbers
+ * come first and the words are written over them; which module is running is our concern.
  */
-const STAGES = ["Running the engine", "Writing the explanation"] as const;
+const STAGES = ["Working out your numbers", "Putting it in words"] as const;
 
 function PendingIndicator() {
   const [stage, setStage] = useState(0);
@@ -69,6 +77,7 @@ export function ChatView() {
 
   const ask = useAsk();
   const conversations = useConversations();
+  const deleteConversation = useDeleteConversation();
   const thread = useConversation(conversationId);
   const endRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -193,6 +202,17 @@ export function ChatView() {
           setPendingQuestion(null);
           setHistoryOpen(false);
         }}
+        isDeleting={deleteConversation.isPending}
+        onDelete={(id) => {
+          deleteConversation.mutate(id);
+          // The open thread cannot survive its own deletion. Reset to a new one rather
+          // than leaving the view pointed at an id the server no longer has.
+          if (id === conversationId) {
+            setConversationId(undefined);
+            setLiveAnswer(null);
+            setPendingQuestion(null);
+          }
+        }}
       />
 
       <div className="flex-1 overflow-y-auto">
@@ -201,8 +221,8 @@ export function ChatView() {
             <div className="flex flex-col gap-4 pt-8">
               <h2 className="text-figure-lg">What do you want to know?</h2>
               <p className="text-body text-content-secondary">
-                Answers are computed by the same engines the rest of this product uses. The
-                figures are the answer; any prose is a description of them.
+                Every answer is worked out from the same figures you see everywhere else in
+                the app. The figures are the answer; the words are there to describe them.
               </p>
               <ul className="flex flex-col gap-2 pt-2">
                 {SUGGESTIONS.map((suggestion) => (

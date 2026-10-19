@@ -5,14 +5,7 @@ import type { DebtType } from "@/api/types";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 
-const DEBT_TYPES: { value: DebtType; label: string }[] = [
-  { value: "credit_card", label: "Credit card" },
-  { value: "personal_loan", label: "Personal loan" },
-  { value: "vehicle", label: "Vehicle finance" },
-  { value: "home_loan", label: "Home loan" },
-  { value: "store_account", label: "Store account" },
-  { value: "other", label: "Other" },
-];
+import { DEBT_TYPES, isFixedTerm } from "./debtAppearance";
 
 const FIELD_CLASS =
   "rounded border border-rule bg-surface px-3 py-2 text-body text-content focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent";
@@ -26,7 +19,7 @@ export function CreateDebtForm() {
   const [termMonths, setTermMonths] = useState("");
   const [startedOn, setStartedOn] = useState("");
 
-  const isFixedTerm = debtType === "vehicle" || debtType === "home_loan" || debtType === "personal_loan";
+  const fixedTerm = isFixedTerm(debtType);
 
   return (
     <Card>
@@ -112,13 +105,13 @@ export function CreateDebtForm() {
         </label>
 
         <label className="flex flex-col gap-1 text-label text-content-secondary">
-          Term in months {isFixedTerm ? "" : "(leave blank for a revolving facility)"}
+          Term in months {fixedTerm ? "" : "(leave blank for a revolving facility)"}
           <input
             className={FIELD_CLASS}
             inputMode="numeric"
             value={termMonths}
             onChange={(event) => setTermMonths(event.target.value)}
-            placeholder={isFixedTerm ? "72" : ""}
+            placeholder={fixedTerm ? "72" : ""}
           />
         </label>
 

@@ -13,10 +13,11 @@ from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 class AssistantConversation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """A question thread. See specs/ai-cfo.md and docs/api.md's assistant section."""
 
-    __tablename__ = "assistant_conversations"
+    __tablename__ = "conversations"
+    __table_args__ = {"schema": "assistant"}
 
     user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("identity.users.id"), nullable=False, index=True
     )
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     title: Mapped[str] = mapped_column(String, nullable=False)
@@ -34,13 +35,14 @@ class AssistantMessage(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     asserts and ADR-002 requires.
     """
 
-    __tablename__ = "assistant_messages"
+    __tablename__ = "messages"
+    __table_args__ = {"schema": "assistant"}
 
     conversation_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("assistant_conversations.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("assistant.conversations.id"), nullable=False, index=True
     )
     user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("identity.users.id"), nullable=False, index=True
     )
     asked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     question: Mapped[str] = mapped_column(String, nullable=False)

@@ -30,9 +30,10 @@ class BalanceSource(str, enum.Enum):
 
 class Account(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "accounts"
+    __table_args__ = {"schema": "ledger"}
 
     user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("identity.users.id"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     account_type: Mapped[AccountType] = mapped_column(
