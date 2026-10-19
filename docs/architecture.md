@@ -180,6 +180,44 @@ asynchronous.
 Jobs are idempotent. Re-running a forecast job for the same user and period replaces the
 prior result rather than appending a second one.
 
+### 3.5a Domain events — `app/core/events.py`
+
+Responsible for one question: what recomputes when the ledger changes.
+
+A service records an event — `import.committed`, `import.undone`, `transaction.created`,
+`transactions.reclassified` — into `audit.events` **inside the transaction that did the
+work**. The event and the work commit together or neither does, so a committed import and
+the record that it happened can never disagree. `dispatch_pending` then runs the handlers
+registered for that name, after the commit, on the same connection.
+
+This is a transactional outbox, not a message broker. There is no queue and no separate
+process: for one user's data on one database, a broker would be infrastructure bought for
+nothing. What makes it upgradeable rather than a shortcut is that the event is a committed
+row before any handler runs — moving dispatch into a worker later changes where
+`dispatch_pending` is called from and nothing else.
+
+The rules:
+
+- **Handlers live in one file**, `app/services/event_handlers.py`, and call the same
+  worker entry points §3.5 describes. Adding a downstream calculation is one registration
+  there, not an edit to every call site that could have caused it. This replaced a state
+  where committing an import recalculated the health score in the API route, marked the
+  forecast stale in the service, and never evaluated risk, while manual entry did a
+  different subset from a third place.
+- **Events are named for what happened**, past tense, `subject.verb` — never for what
+  should follow. A handler decides what follows; an event only reports.
+- **Handlers are idempotent.** Each recomputes a value from current state rather than
+  applying a delta, which is what makes a retry safe.
+- **A failing handler never fails the user's request.** The work it follows is already
+  committed and true, and taking the request down over a recalculation would be a worse
+  answer than a stale score. The failure is logged, written to the event's `attempts` and
+  `last_error`, and left unprocessed for the next pass. After `MAX_ATTEMPTS` it stops
+  being retried and appears in `flask events failed` — which is what keeps it from being
+  a silent failure.
+- **Rows are never deleted.** "What recomputed, and when" stays answerable.
+
+`flask events drain` runs the handlers for anything still outstanding, across all users.
+
 ### 3.6 LLM layer — `app/llm/`
 
 Responsible for turning computed results into language, and for classifying what a user's

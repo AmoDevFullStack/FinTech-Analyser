@@ -80,24 +80,6 @@ export function Layout() {
 
           <h1 className="text-title tracking-tight">Financial Digital Twin</h1>
 
-          <div className="ml-auto flex items-center gap-3">
-            <Button
-              variant="primary"
-              icon={MessageSquareText}
-              onClick={() => navigate("/ask")}
-              className="hidden sm:inline-flex"
-            >
-              Ask
-            </Button>
-            <button
-              type="button"
-              aria-label="Ask"
-              onClick={() => navigate("/ask")}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-rule bg-surface-raised text-content transition-colors duration-150 hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface sm:hidden"
-            >
-              <MessageSquareText size={20} strokeWidth={2} aria-hidden="true" />
-            </button>
-          </div>
         </div>
       </header>
 
@@ -167,10 +149,28 @@ export function Layout() {
 
       <main
         id="main"
-        className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-8 px-4 py-8 sm:px-6"
+        className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-8 px-4 pb-28 pt-8 sm:px-6"
       >
         <Outlet />
       </main>
+
+      {/* Ask sits at the bottom, within thumb reach, rather than in the header beside the
+          menu. It is the one control a reader reaches for in the middle of reading
+          something — having read a figure they do not understand — so it belongs where the
+          hand already is, not at the far end of the screen from it.
+
+          `pb-28` on <main> reserves the space so the button never covers the last row of a
+          page, and the safe-area inset keeps it clear of a phone's home indicator. */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-end px-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
+        <Button
+          variant="primary"
+          icon={MessageSquareText}
+          onClick={() => navigate("/ask")}
+          className="pointer-events-auto shadow-2"
+        >
+          Ask
+        </Button>
+      </div>
     </div>
   );
 }

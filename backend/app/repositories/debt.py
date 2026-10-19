@@ -10,7 +10,7 @@ from app.models.debt import Debt
 _LIST_FOR_USER = text(
     """
     SELECT *
-      FROM debts
+      FROM obligations.debts
      WHERE user_id = :user_id
        AND deleted_at IS NULL
     """
@@ -19,7 +19,7 @@ _LIST_FOR_USER = text(
 _GET_FOR_USER = text(
     """
     SELECT *
-      FROM debts
+      FROM obligations.debts
      WHERE id = :debt_id
        AND user_id = :user_id
        AND deleted_at IS NULL

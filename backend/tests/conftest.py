@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 
 import pytest
+from sqlalchemy import text
 
 # Assignment, not setdefault: the container already has FLASK_ENV=development set, and
 # setdefault would keep it — which is exactly the bug described above.
@@ -23,6 +24,7 @@ os.environ.setdefault("SECRET_KEY", "test-secret")
 from app import create_app  # noqa: E402
 from app.core.config import load_config  # noqa: E402
 from app.core.extensions import db as _db  # noqa: E402
+from app.models.schemas import ensure_schemas  # noqa: E402
 
 # A database this suite is willing to drop tables in. Anything else is someone's data.
 SAFE_DATABASE_SUFFIXES = ("_test", "_tests")
@@ -58,6 +60,19 @@ _assert_safe_database()
 def app():
     application = create_app()
     with application.app_context():
+        # Schemas first: every table declares one (app/models/schemas.py) and create_all
+        # builds tables, never the schemas holding them — without this the first table
+        # fails with InvalidSchemaName on a fresh database.
+        #
+        # `citext` too: `users.email` is CITEXT, and create_all does not install the
+        # extension its column type needs. Migration 0001 does that for a real database;
+        # these fixtures build their tables from the models instead, so they have to say it
+        # themselves.
+        with _db.engine.connect() as connection:
+            connection.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
+            ensure_schemas(connection)
+            connection.commit()
+
         # Drop before creating as well as after: a run interrupted mid-test leaves tables
         # behind, and starting from them makes the next run fail on whatever unique
         # constraint the leftover rows happen to violate rather than on anything real.

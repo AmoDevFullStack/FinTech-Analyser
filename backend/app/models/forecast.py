@@ -13,14 +13,15 @@ from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 class Forecast(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "forecasts"
+    __table_args__ = {"schema": "analytics"}
 
     user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("identity.users.id"), nullable=False, index=True
     )
     horizon_months: Mapped[int] = mapped_column(nullable=False)
     generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     input_snapshot_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("position_snapshots.id"), nullable=False
+        PGUUID(as_uuid=True), ForeignKey("analytics.position_snapshots.id"), nullable=False
     )
     assumptions: Mapped[dict] = mapped_column(JSONB, nullable=False)
     engine_version: Mapped[str] = mapped_column(String, nullable=False)
@@ -29,9 +30,10 @@ class Forecast(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
 class ForecastPeriod(UUIDPrimaryKeyMixin, Base):
     __tablename__ = "forecast_periods"
+    __table_args__ = {"schema": "analytics"}
 
     forecast_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("forecasts.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("analytics.forecasts.id"), nullable=False, index=True
     )
     period_index: Mapped[int] = mapped_column(nullable=False)
     month: Mapped[str] = mapped_column(String, nullable=False)

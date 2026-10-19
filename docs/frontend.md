@@ -141,6 +141,33 @@ Rates and ratios follow the same rule and arrive as strings, per `docs/api.md`.
 
 ---
 
+## 4a. Words on the client
+
+Nothing internal reaches the screen. The API sends the provenance a financial system needs
+— `engine_version` on a forecast, `source: "emergency_fund_engine"` on a figure, an event
+name, a module name — and every one of those stays on the wire, in the database, and in the
+audit trail. None of them is rendered.
+
+The rules:
+
+- **A version number is not a fact about someone's money.** `engine_version` is stored and
+  returned; the screen says when a figure was worked out, not what computed it.
+- **A module name is translated before it is shown.** `features/assistant/figureSources.ts`
+  maps each `source` to plain words — "from your emergency fund". An unrecognised source
+  falls back to something vague rather than to the key itself, so a new engine appearing
+  server-side cannot leak a module name onto the screen.
+- **Status words say what the reader should do or expect**, not what the system's internal
+  state is called: "Out of date — your figures have changed since this was worked out",
+  not "Stale — inputs changed since it was generated".
+- **Waiting states name the work in the reader's terms.** "Working out your numbers", then
+  "Putting it in words" — which also happens to be the honest description of the two-stage
+  boundary ADR-002 draws.
+
+The test for a piece of copy is whether a person who has never seen this codebase would
+recognise every word in it as being about their own money.
+
+---
+
 ## 5. Server state
 
 Server state is cached and owned by TanStack Query. Local UI state — a form's contents, a

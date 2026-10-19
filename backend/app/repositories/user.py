@@ -11,7 +11,7 @@ from app.models.user import User
 _BY_EMAIL = text(
     """
     SELECT *
-      FROM users
+      FROM identity.users
      WHERE email = :email
     """
 )
@@ -19,7 +19,7 @@ _BY_EMAIL = text(
 _BY_ID = text(
     """
     SELECT *
-      FROM users
+      FROM identity.users
      WHERE id = :user_id
     """
 )

@@ -29,8 +29,19 @@ Five regions, in priority order:
 **1. Position.** Net worth, liquid savings, total debt. The anchor figures.
 
 **2. This month's cash flow.** Income, essential spending, discretionary spending,
-remaining. Rendered as a flow, not a pie chart — the user wants to know what is left, not
-the proportional breakdown of what is gone.
+remaining, each against the month before. Rendered as a flow, not a pie chart — the user
+wants to know what is left, not the proportional breakdown of what is gone.
+
+The month shown is the most recent one **with transactions**, named on the card, not the
+current calendar month. On the 3rd of a month the current month holds three days, and for
+a user whose last statement was a while ago it holds nothing — four zeros under a heading
+is not a reading, it is the absence of one. Where there are no transactions at all the
+region says so instead of showing zeros.
+
+Every monthly figure in this product is derived from transactions, and the dashboard states
+what it measured: which month, how many months of history exist, and how many transactions
+stand behind them. A figure from one imported statement and a figure from eighteen months
+of them are different claims.
 
 **3. What is coming.** Obligations due in the next 30 days with dates and amounts, and
 whether projected available funds cover them. This is the section that most often changes

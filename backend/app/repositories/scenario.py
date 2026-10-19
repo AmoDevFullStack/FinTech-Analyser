@@ -11,7 +11,7 @@ from app.models.scenario import Scenario, ScenarioAssumption, ScenarioResult
 _LIST_FOR_USER = text(
     """
     SELECT *
-      FROM scenarios
+      FROM analytics.scenarios
      WHERE user_id = :user_id
      ORDER BY created_at DESC
     """
@@ -20,7 +20,7 @@ _LIST_FOR_USER = text(
 _GET_FOR_USER = text(
     """
     SELECT *
-      FROM scenarios
+      FROM analytics.scenarios
      WHERE id = :scenario_id
        AND user_id = :user_id
     """
@@ -29,7 +29,7 @@ _GET_FOR_USER = text(
 _ASSUMPTIONS_FOR = text(
     """
     SELECT *
-      FROM scenario_assumptions
+      FROM analytics.scenario_assumptions
      WHERE scenario_id = :scenario_id
     """
 )
@@ -37,7 +37,7 @@ _ASSUMPTIONS_FOR = text(
 _RESULTS_FOR = text(
     """
     SELECT *
-      FROM scenario_results
+      FROM analytics.scenario_results
      WHERE scenario_id = :scenario_id
      ORDER BY computed_at DESC
     """
@@ -46,7 +46,7 @@ _RESULTS_FOR = text(
 _RESULT_FOR = text(
     """
     SELECT *
-      FROM scenario_results
+      FROM analytics.scenario_results
      WHERE scenario_id = :scenario_id
        AND id = :result_id
     """

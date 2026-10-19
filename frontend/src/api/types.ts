@@ -32,12 +32,30 @@ export interface HealthComponent {
 }
 
 export interface HealthAssessment {
+  /** The calendar month assessed, `YYYY-MM`. What the score is about — `computed_at` is
+   * only when it was worked out. */
+  month: string;
   score: number;
   computed_at: string;
   weights_version: string;
   components: HealthComponent[];
   largest_positive_contributor: string;
   largest_negative_contributor: string;
+  /** Which inputs are the month's own and which are as they stand today. Null on
+   * assessments stored before the score became month-by-month. */
+  historical_basis: {
+    monthly_flows: string;
+    liquid_savings: string;
+    debt_minimum_payments: string;
+    credit_utilisation: string;
+  } | null;
+  /** How much statement evidence stands behind the score. Null on assessments stored
+   * before the score became month-by-month. */
+  evidence: {
+    transactions_in_month: number;
+    months_of_history: number;
+    imports_behind_month: number;
+  } | null;
 }
 
 export interface Position {
@@ -50,6 +68,15 @@ export interface Position {
   monthly_discretionary: Money | null;
   projected_cash_flow: Money | null;
   emergency_fund_months: string | null;
+  /** The month the monthly figures above were measured over, `YYYY-MM` — the most recent
+   * month with transactions, not necessarily the current one. Null before any snapshot has
+   * recorded it. */
+  baseline_month: string | null;
+  /** How many months carry any transactions at all, and how many transactions there are.
+   * A figure from one imported statement and a figure from eighteen are different claims. */
+  months_of_history: number;
+  transactions_counted: number;
+  last_transaction_on: string | null;
   health_score: number | null;
   health_generated_at: string | null;
   health_score_change: number | null;
@@ -84,6 +111,57 @@ export interface Account {
   archived_at: string | null;
 }
 
+/** How the money moved. Mirrors backend/app/domain/payment_taxonomy.py's PaymentMethod. */
+export type PaymentMethod =
+  | "debit_order"
+  | "stop_order"
+  | "card_purchase"
+  | "card_online"
+  | "atm_withdrawal"
+  | "cash_deposit"
+  | "eft_out"
+  | "eft_in"
+  | "instant_payment"
+  | "internal_transfer"
+  | "salary_deposit"
+  | "cheque"
+  | "bank_fee"
+  | "interest"
+  | "reversal"
+  | "unknown";
+
+/** What the payment was for. Mirrors that module's SpendingPurpose. */
+export type SpendingPurpose =
+  | "rent"
+  | "bond_repayment"
+  | "levies"
+  | "rates_and_taxes"
+  | "utilities"
+  | "groceries"
+  | "fuel"
+  | "transport"
+  | "vehicle_instalment"
+  | "insurance"
+  | "medical"
+  | "telecoms"
+  | "subscriptions"
+  | "dining"
+  | "entertainment"
+  | "clothing"
+  | "education"
+  | "childcare"
+  | "domestic_help"
+  | "savings"
+  | "investment"
+  | "debt_repayment"
+  | "bank_charges"
+  | "salary"
+  | "other_income"
+  | "internal_transfer"
+  | "unknown";
+
+export type SpendKind = "income" | "essential" | "discretionary" | "debt" | "saving" | "transfer";
+
 export interface Transaction {
   id: string;
   account_id: string;
@@ -96,6 +174,95 @@ export interface Transaction {
   is_recurring: boolean;
   category_confidence: Rate | null;
   category_set_by_user: boolean;
+  /** Null on a row imported before detection existed and never reclassified. The
+   * interface renders the absence rather than showing "unknown", because "not looked at"
+   * and "looked at and could not tell" are different claims. */
+  payment_method: PaymentMethod | null;
+  spending_purpose: SpendingPurpose | null;
+  merchant: string | null;
+  purpose_confidence: Rate | null;
+  /** Present on search results only — how this row matched the query, not a property of
+   * the row. See backend/app/repositories/transaction.py. */
+  match_score?: Rate;
+  match_basis?: "exact" | "fuzzy" | "filter";
+}
+
+/** One figure before and after a set of new transactions, with the movement between. */
+export interface MetricChange {
+  name: string;
+  unit: "money" | "rate" | "months";
+  before: string;
+  after: string;
+  delta: string;
+  is_material: boolean;
+}
+
+export interface MonthlyFlows {
+  income: Money;
+  essential: Money;
+  discretionary: Money;
+  saving: Money;
+  debt_service: Money;
+}
+
+export interface SpendingImpact {
+  before: MonthlyFlows;
+  after: MonthlyFlows;
+  added: MonthlyFlows;
+  changes: MetricChange[];
+}
+
+export interface DetectedRow {
+  description: string;
+  merchant: string | null;
+  occurred_on: string;
+  amount: Money;
+  payment_method: PaymentMethod;
+  spending_purpose: SpendingPurpose;
+  kind: SpendKind | null;
+  purpose_confidence: Rate;
+  category_id: string | null;
+  category_name: string | null;
+  category_basis: string;
+  is_duplicate: boolean;
+  needs_review: boolean;
+}
+
+export interface GroupTotal {
+  key: string;
+  label: string;
+  total: Money;
+  monthly_average: Money;
+  count: number;
+}
+
+export interface Commitment {
+  label: string;
+  merchant: string | null;
+  method: PaymentMethod;
+  purpose: SpendingPurpose;
+  monthly_amount: Money;
+  occurrences: number;
+  is_new: boolean;
+}
+
+export interface AffectedArea {
+  area: string;
+  effect: string;
+  detail: string;
+}
+
+export interface SpendingInsight {
+  months_covered: number;
+  period_start: string | null;
+  period_end: string | null;
+  rows_needing_review: number;
+  rows: DetectedRow[];
+  by_purpose: GroupTotal[];
+  by_method: GroupTotal[];
+  commitments: Commitment[];
+  impact: SpendingImpact;
+  affected: AffectedArea[];
 }
 
 export interface ScenarioPeriod {
@@ -379,4 +546,60 @@ export interface RecurringSeriesRow {
   next_expected_on: string;
   category_id: string | null;
   category_kind: string | null;
+}
+
+/** GET /transactions/months — docs/api.md § "Month by month".
+ *
+ * Two views of the same month, and they answer different questions. `totals` excludes
+ * internal transfers, because moving money between your own accounts is neither income
+ * nor spending. `cash` includes them, because a balance does not care why money left —
+ * it is the figure that reconciles to a bank statement.
+ */
+export interface MonthTotals {
+  income: Money;
+  essential: Money;
+  discretionary: Money;
+  saving: Money;
+  debt_service: Money;
+  /** Everything that left, saving included: a month that put money away had that much
+   * less available. */
+  spending: Money;
+  /** income − spending. Negative in a month that overspent, and shown as such. */
+  net: Money;
+}
+
+export interface MonthMetricChange {
+  previous: Money;
+  current: Money;
+  change: Money;
+  /** Null when last month was zero — from nothing to something has no percentage, and a
+   * 0% would read as "unchanged". */
+  percentage_change: Rate | null;
+}
+
+export interface MonthCash {
+  opening: Money;
+  inflow: Money;
+  outflow: Money;
+  closing: Money;
+}
+
+export type MonthMetric = keyof MonthTotals;
+
+export interface MonthReport {
+  /** `YYYY-MM`. */
+  month: string;
+  previous_month: string | null;
+  totals: MonthTotals;
+  changes: Partial<Record<MonthMetric, MonthMetricChange>>;
+  /** Null when nothing in scope holds a cash balance, such as a credit card on its own. */
+  cash: MonthCash | null;
+  transaction_count: number;
+  /** The uploads this month's figures were built from. Empty for a month entered by hand. */
+  import_batch_ids: string[];
+}
+
+export interface MonthlySummaryResponse {
+  data: MonthReport[];
+  months: number;
 }

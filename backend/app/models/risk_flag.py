@@ -31,9 +31,10 @@ class RiskFlag(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """
 
     __tablename__ = "risk_flags"
+    __table_args__ = {"schema": "analytics"}
 
     user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("identity.users.id"), nullable=False, index=True
     )
     risk_type: Mapped[str] = mapped_column(String, nullable=False)
     severity: Mapped[str] = mapped_column(String, nullable=False)

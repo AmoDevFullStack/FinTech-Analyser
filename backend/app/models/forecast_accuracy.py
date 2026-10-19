@@ -22,10 +22,11 @@ class ForecastAccuracy(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "forecast_accuracy"
     __table_args__ = (
         UniqueConstraint("user_id", "month", "metric", name="uq_forecast_accuracy_month_metric"),
+        {"schema": "analytics"},
     )
 
     user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("identity.users.id"), nullable=False, index=True
     )
     forecast_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
     month: Mapped[str] = mapped_column(String, nullable=False)

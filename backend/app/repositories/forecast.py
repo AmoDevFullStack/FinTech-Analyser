@@ -11,7 +11,7 @@ from app.models.forecast import Forecast, ForecastPeriod
 _LATEST_FOR_USER = text(
     """
     SELECT *
-      FROM forecasts
+      FROM analytics.forecasts
      WHERE user_id = :user_id
      ORDER BY generated_at DESC
     """
@@ -19,7 +19,7 @@ _LATEST_FOR_USER = text(
 
 _DELETE_PERIODS = text(
     """
-    DELETE FROM forecast_periods
+    DELETE FROM analytics.forecast_periods
      WHERE forecast_id = :forecast_id
     """
 )
@@ -27,7 +27,7 @@ _DELETE_PERIODS = text(
 _PERIODS_FOR = text(
     """
     SELECT *
-      FROM forecast_periods
+      FROM analytics.forecast_periods
      WHERE forecast_id = :forecast_id
      ORDER BY period_index
     """

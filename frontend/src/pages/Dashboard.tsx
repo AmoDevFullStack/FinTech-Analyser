@@ -31,9 +31,26 @@ export function Dashboard() {
           {position.as_of ? (
             <p className="text-caption text-content-tertiary">
               Position as of {formatDateTime(position.as_of)}
-              {position.is_stale ? " · stale" : ""}
+              {position.is_stale ? " · out of date" : ""}
             </p>
           ) : null}
+          {/* What the monthly figures were measured over, and how much history stands
+              behind them. A figure from one imported statement and a figure from eighteen
+              months of them are different claims, and only one of them is worth acting on
+              — saying which is cheaper than letting a reader assume. */}
+          {position.months_of_history > 0 ? (
+            <p className="text-caption text-content-tertiary">
+              Monthly figures from your transactions
+              {position.baseline_month ? ` · ${position.baseline_month}` : ""} ·{" "}
+              {position.months_of_history}{" "}
+              {position.months_of_history === 1 ? "month" : "months"} of history,{" "}
+              {position.transactions_counted} transactions
+            </p>
+          ) : (
+            <p className="text-caption text-content-tertiary">
+              No transactions yet — upload a statement and these figures become real.
+            </p>
+          )}
         </div>
         <Button
           icon={RefreshCw}

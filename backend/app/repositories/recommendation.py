@@ -10,11 +10,11 @@ from app.models.recommendation import Recommendation, RecommendationStatus
 _LIST_FOR_USER = text(
     """
     SELECT *
-      FROM recommendations
+      FROM analytics.recommendations
      WHERE user_id = :user_id
        AND (
-         CAST(:status AS recommendation_status_enum) IS NULL
-         OR status = CAST(:status AS recommendation_status_enum)
+         CAST(:status AS shared.recommendation_status_enum) IS NULL
+         OR status = CAST(:status AS shared.recommendation_status_enum)
        )
      ORDER BY benefit_amount DESC
     """
@@ -23,7 +23,7 @@ _LIST_FOR_USER = text(
 _LATEST_OF_RULE = text(
     """
     SELECT *
-      FROM recommendations
+      FROM analytics.recommendations
      WHERE user_id = :user_id
        AND rule_id = :rule_id
      ORDER BY generated_on DESC, created_at DESC
@@ -33,7 +33,7 @@ _LATEST_OF_RULE = text(
 _GET_FOR_USER = text(
     """
     SELECT *
-      FROM recommendations
+      FROM analytics.recommendations
      WHERE id = :recommendation_id
        AND user_id = :user_id
     """

@@ -1,36 +1,29 @@
-# Backend
-backend/.venv/
-backend/__pycache__/
-backend/**/__pycache__/
-backend/.pytest_cache/
-backend/.mypy_cache/
-backend/.ruff_cache/
-backend/htmlcov/
-backend/.coverage
-
-# Frontend
-frontend/node_modules/
-frontend/dist/
-frontend/playwright-report/
-frontend/test-results/
-
-# Environment
+# Secrets and local configuration
 .env
-*.local
+.env.*
+!.env.example
 
-# OS
-.DS_Store
-Thumbs.db
+# Personal financial data
+SBSA_Statement_*.csv
 
-# Node/tooling caches
-frontend/.vite/
-backend/.venv/**/*.pyc
+# Python cache and test artifacts
+__pycache__/
+*.py[cod]
+.hypothesis/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Stale bootstrap artifact — content duplicated in docs/ and specs/
-files.zip
+# Frontend dependencies and generated output
+node_modules/
+dist/
+build/
+.next/
+coverage/
+*.tsbuildinfo
 
-# Locally installed Claude Code skills/plugins — regenerated from skills-lock.json,
-# not project source
-.claude/
-.agents/
-caveman/
+# Python environments
+.venv/
+venv/
+# Local AI/design reference material
+.agents/skills/apple-design/

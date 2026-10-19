@@ -21,6 +21,6 @@ describe("ProjectedValue", () => {
         projected={{ value: asMoney("10800.00"), generatedAt: "2026-09-06T06:00:00+02:00", isStale: true }}
       />,
     );
-    expect(screen.getByText(/Stale/)).toBeInTheDocument();
+    expect(screen.getByText(/Out of date/)).toBeInTheDocument();
   });
 });

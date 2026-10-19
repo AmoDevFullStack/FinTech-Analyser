@@ -26,10 +26,13 @@ export function useCreateAccount() {
     mutationFn: (data: CreateAccountInput) => api.post<Account>("/accounts", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
-      // The backend recaptures a position snapshot on any account change that moves a
-      // figure (see AccountService) — invalidate so the dashboard picks it up without a
-      // manual reload.
+      // The backend recaptures a position snapshot AND reassesses financial health on any
+      // account change that moves a figure (AccountService._sync_position) — invalidate
+      // both so the dashboard and the health page pick them up without a manual reload.
       queryClient.invalidateQueries({ queryKey: ["position"] });
+      queryClient.invalidateQueries({ queryKey: ["health-assessment"] });
+      // A new or changed account changes which transactions a month covers.
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 }
@@ -40,10 +43,13 @@ export function useArchiveAccount() {
     mutationFn: (accountId: string) => api.post<Account>(`/accounts/${accountId}/archive`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
-      // The backend recaptures a position snapshot on any account change that moves a
-      // figure (see AccountService) — invalidate so the dashboard picks it up without a
-      // manual reload.
+      // The backend recaptures a position snapshot AND reassesses financial health on any
+      // account change that moves a figure (AccountService._sync_position) — invalidate
+      // both so the dashboard and the health page pick them up without a manual reload.
       queryClient.invalidateQueries({ queryKey: ["position"] });
+      queryClient.invalidateQueries({ queryKey: ["health-assessment"] });
+      // A new or changed account changes which transactions a month covers.
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 }
@@ -64,10 +70,13 @@ export function useUpdateAccount() {
       api.patch<Account>(`/accounts/${accountId}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
-      // The backend recaptures a position snapshot on any account change that moves a
-      // figure (see AccountService) — invalidate so the dashboard picks it up without a
-      // manual reload.
+      // The backend recaptures a position snapshot AND reassesses financial health on any
+      // account change that moves a figure (AccountService._sync_position) — invalidate
+      // both so the dashboard and the health page pick them up without a manual reload.
       queryClient.invalidateQueries({ queryKey: ["position"] });
+      queryClient.invalidateQueries({ queryKey: ["health-assessment"] });
+      // A new or changed account changes which transactions a month covers.
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 }

@@ -4,6 +4,7 @@ from app.models.audit_log import AuditLog
 from app.models.category import Category
 from app.models.column_mapping import AccountColumnMapping
 from app.models.debt import Debt
+from app.models.domain_event import DomainEvent
 from app.models.forecast import Forecast, ForecastPeriod
 from app.models.forecast_accuracy import ForecastAccuracy
 from app.models.goal import Goal, GoalContribution
@@ -24,6 +25,7 @@ __all__ = [
     "Category",
     "AccountColumnMapping",
     "Debt",
+    "DomainEvent",
     "Forecast",
     "ForecastPeriod",
     "ForecastAccuracy",

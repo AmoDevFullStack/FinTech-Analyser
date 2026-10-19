@@ -32,9 +32,10 @@ class Recommendation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """
 
     __tablename__ = "recommendations"
+    __table_args__ = {"schema": "analytics"}
 
     user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("identity.users.id"), nullable=False, index=True
     )
     rule_id: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[RecommendationStatus] = mapped_column(

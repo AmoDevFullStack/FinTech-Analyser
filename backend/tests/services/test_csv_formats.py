@@ -110,3 +110,57 @@ def test_a_mapping_needs_exactly_one_amount_convention() -> None:
             debit_column="Debit",
             credit_column="Credit",
         )
+
+
+# ---------------------------------------------------------------------------------------
+# Uploads that are not CSV at all
+# ---------------------------------------------------------------------------------------
+def test_a_pdf_upload_is_refused_with_an_explanation():
+    """A bank statement arrives as a PDF more often than as a CSV, so this is the expected
+    mistake, not an exotic one. It used to decode as UTF-8, raise, and reach the user as
+    "an unexpected error occurred"."""
+    from app.core.errors import ValidationError
+    from app.services.import_service import _decode_csv
+
+    with pytest.raises(ValidationError) as caught:
+        _decode_csv(b"%PDF-1.7\n1 0 obj\n<< /Type /Catalog >>")
+
+    assert caught.value.details["detected_type"] == "pdf"
+    assert "CSV" in caught.value.message
+
+
+def test_a_pdf_renamed_as_csv_is_still_recognised():
+    """Recognised by content, not by filename."""
+    from app.core.errors import ValidationError
+    from app.services.import_service import _decode_csv
+
+    with pytest.raises(ValidationError) as caught:
+        _decode_csv(b"%PDF-1.4 pretending to be statement.csv")
+
+    assert caught.value.details["detected_type"] == "pdf"
+
+
+def test_a_spreadsheet_upload_is_refused_with_an_explanation():
+    from app.core.errors import ValidationError
+    from app.services.import_service import _decode_csv
+
+    with pytest.raises(ValidationError) as caught:
+        _decode_csv(bytes.fromhex("504b0304") + b"xl/workbook.xml")
+
+    assert caught.value.details["detected_type"] == "spreadsheet"
+
+
+def test_other_binary_is_refused_rather_than_raising_a_decode_error():
+    from app.core.errors import ValidationError
+    from app.services.import_service import _decode_csv
+
+    with pytest.raises(ValidationError) as caught:
+        _decode_csv(bytes.fromhex("ffd8ffe000104a464946"))
+
+    assert caught.value.details["detected_type"] == "binary"
+
+
+def test_a_real_csv_still_decodes():
+    from app.services.import_service import _decode_csv
+
+    assert _decode_csv(b"\xef\xbb\xbfDate,Description\n2026-07-01,RENT\n").startswith("Date")

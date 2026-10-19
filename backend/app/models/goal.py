@@ -23,12 +23,13 @@ class Goal(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """
 
     __tablename__ = "goals"
+    __table_args__ = {"schema": "obligations"}
 
     user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("identity.users.id"), nullable=False, index=True
     )
     account_id: Mapped[UUID | None] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("accounts.id"), nullable=True
+        PGUUID(as_uuid=True), ForeignKey("ledger.accounts.id"), nullable=True
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     target_amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
@@ -48,12 +49,13 @@ class GoalContribution(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """
 
     __tablename__ = "goal_contributions"
+    __table_args__ = {"schema": "obligations"}
 
     goal_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("goals.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("obligations.goals.id"), nullable=False, index=True
     )
     user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("identity.users.id"), nullable=False, index=True
     )
     amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
     occurred_on: Mapped[date] = mapped_column(Date, nullable=False)

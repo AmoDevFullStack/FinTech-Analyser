@@ -1,12 +1,12 @@
-from uuid import UUID
-
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, g, jsonify
 
 from app.core.auth import require_auth
-from app.core.errors import NotFoundError, ValidationError
+from app.core.errors import NotFoundError
 from app.core.extensions import db
 from app.repositories.category import CategoryRepository
 from app.repositories.transaction import TransactionRepository
+from app.schemas.base import parse_body
+from app.schemas.requests import CategoryCorrectionRequest
 from app.services.categorisation import CategorisationService
 
 bp = Blueprint("categories", __name__, url_prefix="/categories")
@@ -44,21 +44,18 @@ def correct_category():
     categorisation" — so this returns how many other uncorrected transactions the
     correction moved, rather than silently improving them.
     """
-    body = request.get_json(force=True, silent=True) or {}
-    for required in ("transaction_id", "category_id"):
-        if not body.get(required):
-            raise ValidationError(f"'{required}' is required.")
+    body = parse_body(CategoryCorrectionRequest)
 
     transaction = TransactionRepository(db.session).get_for_user(
-        UUID(body["transaction_id"]), user_id=g.user_id
+        body.transaction_id, user_id=g.user_id
     )
     if transaction is None:
         raise NotFoundError("No transaction with that identifier exists for this user.")
 
     propagated = CategorisationService(db.session).correct(
         transaction,
-        category_id=UUID(body["category_id"]),
-        propagate=body.get("propagate", True),
+        category_id=body.category_id,
+        propagate=body.propagate,
     )
     return (
         jsonify(

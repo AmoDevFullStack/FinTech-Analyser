@@ -1,5 +1,6 @@
-import { X } from "lucide-react";
+import { Trash2, X } from "lucide-react";
 import type { RefObject } from "react";
+import { useState } from "react";
 
 import type { AssistantConversationSummary } from "@/api/types";
 
@@ -14,6 +15,8 @@ export function HistoryDrawer({
   conversations,
   activeConversationId,
   onSelect,
+  onDelete,
+  isDeleting = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -21,7 +24,14 @@ export function HistoryDrawer({
   conversations: AssistantConversationSummary[] | undefined;
   activeConversationId: string | undefined;
   onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+  isDeleting?: boolean;
 }) {
+  // Which row is asking to be confirmed. Deleting a conversation cannot be undone, so it
+  // takes two deliberate taps — but in the row itself rather than behind a modal, which
+  // would put a second dialog on top of this one.
+  const [confirming, setConfirming] = useState<string | null>(null);
+
   if (!open) return null;
 
   return (
@@ -56,12 +66,13 @@ export function HistoryDrawer({
           <ul className="flex flex-col gap-1 overflow-y-auto">
             {conversations.map((conversation) => {
               const isActive = conversation.id === activeConversationId;
+              const isConfirming = confirming === conversation.id;
               return (
-                <li key={conversation.id}>
+                <li key={conversation.id} className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => onSelect(conversation.id)}
-                    className={`flex min-h-[44px] w-full flex-col items-start justify-center rounded-lg px-3 py-1.5 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                    className={`flex min-h-[44px] flex-1 flex-col items-start justify-center rounded-lg px-3 py-1.5 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                       isActive
                         ? "bg-surface-sunken text-accent"
                         : "text-content hover:bg-surface-sunken"
@@ -74,6 +85,38 @@ export function HistoryDrawer({
                       {formatShortDate(conversation.started_at)}
                     </span>
                   </button>
+
+                  {isConfirming ? (
+                    <span className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={isDeleting}
+                        onClick={() => {
+                          onDelete(conversation.id);
+                          setConfirming(null);
+                        }}
+                        className="min-h-[44px] rounded-lg px-2 text-caption text-content transition-colors duration-150 hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60"
+                      >
+                        Delete
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirming(null)}
+                        className="min-h-[44px] rounded-lg px-2 text-caption text-content-secondary transition-colors duration-150 hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      >
+                        Keep
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-label={`Delete ${conversation.title || "this conversation"}`}
+                      onClick={() => setConfirming(conversation.id)}
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-content-tertiary transition-colors duration-150 hover:bg-surface-sunken hover:text-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    >
+                      <Trash2 size={16} strokeWidth={2} aria-hidden="true" />
+                    </button>
+                  )}
                 </li>
               );
             })}
