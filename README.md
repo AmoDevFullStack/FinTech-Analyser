@@ -1,4 +1,4 @@
-# Financial Digital Twin
+# MOTHUSI/Financial Digital Twin
 
 [![CI](https://github.com/AmoDevFullStack/FinTech-Analyser/actions/workflows/ci.yml/badge.svg)](https://github.com/AmoDevFullStack/FinTech-Analyser/actions/workflows/ci.yml)
 [![CD](https://github.com/AmoDevFullStack/FinTech-Analyser/actions/workflows/cd.yml/badge.svg)](https://github.com/AmoDevFullStack/FinTech-Analyser/actions/workflows/cd.yml)
