@@ -25,7 +25,7 @@ COPY . .
 RUN npm run build
 
 # ---------------------------------------------------------------------------------------
-FROM nginxinc/nginx-unprivileged:1.27-alpine AS prod
+FROM nginxinc/nginx-unprivileged:1.31-alpine AS prod
 ARG BUILD_SHA=unknown
 LABEL org.opencontainers.image.revision=${BUILD_SHA}
 COPY nginx.conf /etc/nginx/conf.d/default.conf
