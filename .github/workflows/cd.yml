@@ -69,7 +69,7 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
       - id: ecr
         uses: aws-actions/amazon-ecr-login@v2
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       - uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.image }}
@@ -116,7 +116,7 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
       - id: ecr
         uses: aws-actions/amazon-ecr-login@v2
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       - name: Re-tag the tested images
         env:
           ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
