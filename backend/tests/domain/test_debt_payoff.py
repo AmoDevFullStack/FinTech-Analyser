@@ -63,9 +63,24 @@ def test_what_if_more_payment_never_increases_months_or_interest() -> None:
 
 def _debts() -> list[DebtInput]:
     return [
-        DebtInput(id="card", current_balance=Decimal("20000"), annual_rate=Decimal("0.24"), minimum_payment=Decimal("600")),
-        DebtInput(id="personal", current_balance=Decimal("60000"), annual_rate=Decimal("0.18"), minimum_payment=Decimal("1800")),
-        DebtInput(id="vehicle", current_balance=Decimal("150000"), annual_rate=Decimal("0.1175"), minimum_payment=Decimal("2800")),
+        DebtInput(
+            id="card",
+            current_balance=Decimal("20000"),
+            annual_rate=Decimal("0.24"),
+            minimum_payment=Decimal("600"),
+        ),
+        DebtInput(
+            id="personal",
+            current_balance=Decimal("60000"),
+            annual_rate=Decimal("0.18"),
+            minimum_payment=Decimal("1800"),
+        ),
+        DebtInput(
+            id="vehicle",
+            current_balance=Decimal("150000"),
+            annual_rate=Decimal("0.1175"),
+            minimum_payment=Decimal("2800"),
+        ),
     ]
 
 

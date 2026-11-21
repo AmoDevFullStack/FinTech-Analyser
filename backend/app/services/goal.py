@@ -17,9 +17,9 @@ from uuid import UUID
 from app.core.db import DbSession
 from app.core.errors import NotFoundError, ValidationError
 from app.domain.goals import (
+    FundingPlan,
     GoalAssessment,
     GoalRequirement,
-    FundingPlan,
     allocate_across_goals,
     assess_goal,
     months_between,
@@ -88,9 +88,10 @@ class GoalService:
             raise ValidationError("target_amount must be positive.")
         if data.priority < 1:
             raise ValidationError("priority must be 1 or greater.")
-        if data.account_id is not None and self._accounts.get_for_user(
-            data.account_id, user_id=user_id
-        ) is None:
+        if (
+            data.account_id is not None
+            and self._accounts.get_for_user(data.account_id, user_id=user_id) is None
+        ):
             raise ValidationError("No account with that identifier exists for this user.")
 
         goal = Goal(
@@ -242,11 +243,7 @@ class GoalService:
 
     def _available_cash_flow(self, *, user_id: UUID, as_of: date) -> Decimal:
         position = self._position.compute_current(user_id=user_id, as_of=as_of)
-        return (
-            position.monthly_income
-            - position.monthly_essential
-            - position.monthly_discretionary
-        )
+        return position.monthly_income - position.monthly_essential - position.monthly_discretionary
 
     def funding_plan(self, *, user_id: UUID, as_of: date | None = None) -> FundingPlan:
         """Competition between goals: one pool of cash, funded in priority order.

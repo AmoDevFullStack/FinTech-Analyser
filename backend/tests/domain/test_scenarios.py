@@ -108,9 +108,7 @@ def test_debt_repayment_change_is_not_modelled_as_an_expense() -> None:
     """An extra repayment converts cash into a smaller liability; it is not consumption,
     so it must not reduce net worth through the expense channel.
     """
-    deltas = DebtRepaymentChangeAssumptions(
-        additional_monthly_payment=Decimal("1500")
-    ).deltas()
+    deltas = DebtRepaymentChangeAssumptions(additional_monthly_payment=Decimal("1500")).deltas()
 
     assert deltas.additional_debt_repayment == Decimal("1500")
     assert deltas.monthly_expense_delta == Decimal("0")
@@ -132,9 +130,7 @@ def test_one_off_discretionary_expense_leaves_savings_once() -> None:
 
 
 def test_recurring_discretionary_expense_leaves_savings_every_month() -> None:
-    deltas = DiscretionaryExpenseAssumptions(
-        amount=Decimal("15000"), is_recurring=True
-    ).deltas()
+    deltas = DiscretionaryExpenseAssumptions(amount=Decimal("15000"), is_recurring=True).deltas()
 
     assert deltas.upfront_cash == Decimal("0")
     assert deltas.monthly_expense_delta == Decimal("15000")
@@ -144,8 +140,8 @@ def test_every_assumption_set_round_trips_through_its_stored_form() -> None:
     """Reproducibility (specs/scenarios.md) depends on the stored keys rebuilding the
     same object, so every type's as_dict must name every field its constructor takes.
     """
-    from app.services.scenario import build_assumptions
     from app.models.scenario import ScenarioType
+    from app.services.scenario import build_assumptions
 
     cases = [
         (

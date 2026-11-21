@@ -5,7 +5,6 @@ from uuid import UUID
 from sqlalchemy import select, text
 
 from app.core.db import DbSession
-
 from app.models.import_batch import ImportBatch, StagedTransaction
 
 _GET_FOR_USER = text(

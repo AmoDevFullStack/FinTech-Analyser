@@ -17,9 +17,8 @@ from decimal import Decimal
 from uuid import UUID
 
 from app.core.db import DbSession
-
-from app.core.events import IMPORT_COMMITTED, IMPORT_UNDONE, dispatch_pending, record
 from app.core.errors import NotFoundError, SemanticError, ValidationError
+from app.core.events import IMPORT_COMMITTED, IMPORT_UNDONE, dispatch_pending, record
 from app.domain.payment_taxonomy import classify_payment
 from app.domain.text_match import description_similarity
 from app.models.category import Category
@@ -27,9 +26,9 @@ from app.models.import_batch import ImportBatch, ImportStatus, StagedTransaction
 from app.models.transaction import Direction, Transaction
 from app.repositories.account import AccountRepository
 from app.repositories.category import CategoryRepository
+from app.repositories.column_mapping import ColumnMappingRepository
 from app.repositories.import_batch import ImportBatchRepository
 from app.repositories.transaction import TransactionRepository
-from app.repositories.column_mapping import ColumnMappingRepository
 from app.services.categorisation import CategorisationService
 from app.services.csv_formats import ColumnMapping, detect_format, extract_amount
 from app.services.pdf_statements import (
@@ -37,8 +36,8 @@ from app.services.pdf_statements import (
     extract_text_lines,
     parse_statement_text,
 )
-from app.services.spending_insight import SpendingInsight, SpendingInsightService
 from app.services.recurrence import RecurrenceService
+from app.services.spending_insight import SpendingInsight, SpendingInsightService
 
 PROBABLE_MATCH_WINDOW_DAYS = 3
 PROBABLE_MATCH_THRESHOLD = 0.8
@@ -214,9 +213,7 @@ class ImportService:
                     )
                 mapping = _mapping_from_dict(remembered.mapping)
                 detected_name = remembered.label or "remembered"
-                missing = [
-                    column for column in _mapping_columns(mapping) if column not in header
-                ]
+                missing = [column for column in _mapping_columns(mapping) if column not in header]
                 if missing:
                     raise ValidationError(
                         "The mapping remembered for this account does not fit this file.",
@@ -412,13 +409,9 @@ class ImportService:
 
         pending = sum(1 for r in staged_rows if r.conflict_candidate_id is not None)
         batch.rows_parsed = rows_parsed
-        batch.rows_skipped_duplicate = sum(
-            1 for r in staged_rows if r.is_exact_duplicate
-        )
+        batch.rows_skipped_duplicate = sum(1 for r in staged_rows if r.is_exact_duplicate)
         batch.rows_pending_conflict = pending
-        batch.status = (
-            ImportStatus.AWAITING_RESOLUTION if pending else ImportStatus.STAGED
-        )
+        batch.status = ImportStatus.AWAITING_RESOLUTION if pending else ImportStatus.STAGED
         self._session.commit()
 
         return ImportSummary(
@@ -438,9 +431,7 @@ class ImportService:
     ) -> None:
         batch = self._batches.get_for_user(batch_id, user_id=user_id)
         if batch is None:
-            raise NotFoundError(
-                "No import batch with that identifier exists for this user."
-            )
+            raise NotFoundError("No import batch with that identifier exists for this user.")
 
         for staged in self._batches.staged_for(batch_id):
             if staged.id in resolutions:
@@ -458,9 +449,7 @@ class ImportService:
     def commit(self, batch_id: UUID, *, user_id: UUID) -> ImportSummary:
         batch = self._batches.get_for_user(batch_id, user_id=user_id)
         if batch is None:
-            raise NotFoundError(
-                "No import batch with that identifier exists for this user."
-            )
+            raise NotFoundError("No import batch with that identifier exists for this user.")
         if batch.status == ImportStatus.AWAITING_RESOLUTION:
             raise SemanticError("Unresolved conflicts remain for this import batch.")
 
@@ -541,9 +530,7 @@ class ImportService:
     def undo(self, batch_id: UUID, *, user_id: UUID) -> int:
         batch = self._batches.get_for_user(batch_id, user_id=user_id)
         if batch is None:
-            raise NotFoundError(
-                "No import batch with that identifier exists for this user."
-            )
+            raise NotFoundError("No import batch with that identifier exists for this user.")
         if batch.status != ImportStatus.COMMITTED:
             raise SemanticError("Only a committed import batch can be undone.")
 
@@ -578,9 +565,7 @@ class ImportService:
         if not rows:
             return merged
 
-        history = {
-            t.id: t for t in self._transactions.for_user(user_id=user_id, limit=100_000)
-        }
+        history = {t.id: t for t in self._transactions.for_user(user_id=user_id, limit=100_000)}
         for row in rows:
             if row.conflict_candidate_id is None:
                 continue
@@ -678,6 +663,7 @@ class ImportService:
                     outflow.transfer_group_id = group_id
                     inflow.transfer_group_id = group_id
                     break
+
 
 def _mapping_to_dict(mapping: ColumnMapping) -> dict[str, str | None]:
     return {

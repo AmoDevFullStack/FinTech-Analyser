@@ -84,13 +84,9 @@ def parse_query(model: type[TModel]) -> TModel:
     """
     payload: dict[str, Any] = {}
     list_fields = {
-        name
-        for name, field in model.model_fields.items()
-        if _is_sequence_field(field.annotation)
+        name for name, field in model.model_fields.items() if _is_sequence_field(field.annotation)
     }
-    aliases = {
-        (field.alias or name): name for name, field in model.model_fields.items()
-    }
+    aliases = {(field.alias or name): name for name, field in model.model_fields.items()}
 
     for key in request.args:
         target = aliases.get(key, key)

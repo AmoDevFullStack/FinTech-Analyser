@@ -23,9 +23,7 @@ AS_OF = date(2026, 7, 31)
 @pytest.fixture()
 def household(session):
     """One user, one cheque account, three months of history."""
-    user = User(
-        email="months@example.com", password_hash=hash_password("x"), full_name="Test User"
-    )
+    user = User(email="months@example.com", password_hash=hash_password("x"), full_name="Test User")
     session.add(user)
     session.flush()
 
@@ -133,9 +131,7 @@ def test_internal_transfers_are_not_income_and_not_spending(household):
     before = _by_month(_summary(household, since=date(2026, 6, 1), until=date(2026, 6, 30)))
     baseline = before["2026-06"].comparison.totals
 
-    household["add"](
-        date(2026, 6, 15), "-5000", "TRANSFER TO SAVINGS", CategoryKind.TRANSFER
-    )
+    household["add"](date(2026, 6, 15), "-5000", "TRANSFER TO SAVINGS", CategoryKind.TRANSFER)
     household["session"].commit()
 
     after = _by_month(_summary(household, since=date(2026, 6, 1), until=date(2026, 6, 30)))
@@ -160,7 +156,9 @@ def test_a_soft_deleted_transaction_is_not_counted(household):
     from datetime import datetime, timezone
 
     months = _by_month(_summary(household, since=date(2026, 6, 1), until=date(2026, 6, 30)))
-    removed = household["add"](date(2026, 6, 20), "-1000", "TO BE DELETED", CategoryKind.DISCRETIONARY)
+    removed = household["add"](
+        date(2026, 6, 20), "-1000", "TO BE DELETED", CategoryKind.DISCRETIONARY
+    )
     removed.deleted_at = datetime.now(timezone.utc)
     household["session"].commit()
 
@@ -212,7 +210,9 @@ def test_a_credit_card_alone_has_no_cash_line(household, session):
     session.add(card)
     session.commit()
 
-    reports = _summary(household, since=date(2026, 6, 1), until=date(2026, 6, 30), account_id=card.id)
+    reports = _summary(
+        household, since=date(2026, 6, 1), until=date(2026, 6, 30), account_id=card.id
+    )
     assert reports[0].balance is None
 
 
@@ -362,9 +362,7 @@ def test_the_current_month_is_measured_only_as_far_as_it_has_run(household):
 def test_activity_span_reports_what_history_exists(household):
     from app.repositories.transaction import TransactionRepository
 
-    span = TransactionRepository(household["session"]).activity_span(
-        user_id=household["user"].id
-    )
+    span = TransactionRepository(household["session"]).activity_span(user_id=household["user"].id)
 
     # Three months of salary, essentials and discretionary, plus July's rent.
     assert span.first_on == date(2026, 5, 3)

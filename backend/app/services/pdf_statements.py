@@ -65,8 +65,18 @@ _DATE_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
 _SPACES = " " + chr(0x00A0) + chr(0x202F)
 
 _MONTHS = {
-    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
-    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+    "jan": 1,
+    "feb": 2,
+    "mar": 3,
+    "apr": 4,
+    "may": 5,
+    "jun": 6,
+    "jul": 7,
+    "aug": 8,
+    "sep": 9,
+    "oct": 10,
+    "nov": 11,
+    "dec": 12,
 }
 
 #: A money figure as statements print it: `1 234,56`, `1,234.56`, `-1234.56`, `1 234,56-`,
@@ -255,10 +265,7 @@ def parse_money(raw: str) -> Decimal:
 
     trail = (match.group("trail") or "").strip().lower()
     negative = (
-        match.group("sign") == "-"
-        or match.group("sign2") == "-"
-        or trail == "-"
-        or trail == "dr"
+        match.group("sign") == "-" or match.group("sign2") == "-" or trail == "-" or trail == "dr"
     )
     return -value if negative else value
 
@@ -438,7 +445,6 @@ def parse_statement_text(lines: list[str]) -> ParsedStatement:
         rows.reverse()
 
     for line, row in rows:
-
         occurred_on, description, figures = row
 
         # `OPENING BALANCE 5 463.52` is a marker, not a transaction. It carries a date and a

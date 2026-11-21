@@ -35,9 +35,7 @@ def list_recommendations():
         except ValueError as exc:
             raise ValidationError(f"Unknown status: {raw_status!r}") from exc
 
-    rows = RecommendationService(db.session).list_recommendations(
-        user_id=g.user_id, status=status
-    )
+    rows = RecommendationService(db.session).list_recommendations(user_id=g.user_id, status=status)
     return jsonify({"data": [_recommendation_dict(r) for r in rows]}), 200
 
 

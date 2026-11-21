@@ -128,7 +128,9 @@ class AssistantService:
                 narration_available=False,
                 capability=intent.capability.value,
             )
-            return self._record(user_id=user_id, conversation_id=conversation_id, question=question, answer=answer)
+            return self._record(
+                user_id=user_id, conversation_id=conversation_id, question=question, answer=answer
+            )
 
         if intent.needs_clarification:
             answer = AssistantAnswer(
@@ -138,7 +140,9 @@ class AssistantService:
                 clarification=clarifying_question(intent),
                 capability=intent.capability.value,
             )
-            return self._record(user_id=user_id, conversation_id=conversation_id, question=question, answer=answer)
+            return self._record(
+                user_id=user_id, conversation_id=conversation_id, question=question, answer=answer
+            )
 
         if intent.capability is Capability.SMALL_TALK:
             # No figures apply and no engine runs — a greeting is answered in kind, never
@@ -155,11 +159,11 @@ class AssistantService:
                 narration_available=narration is not None,
                 capability=intent.capability.value,
             )
-            return self._record(user_id=user_id, conversation_id=conversation_id, question=question, answer=answer)
+            return self._record(
+                user_id=user_id, conversation_id=conversation_id, question=question, answer=answer
+            )
 
-        figures, based_on = self._run_capability(
-            user_id=user_id, intent=intent, as_of=as_of
-        )
+        figures, based_on = self._run_capability(user_id=user_id, intent=intent, as_of=as_of)
 
         narration = self._interpreter.narrate(
             payload=build_narration_payload(
@@ -242,13 +246,9 @@ class AssistantService:
         context = self._base_context(user_id=user_id, as_of=as_of)
         month = intent.parameters.month
         if month is None:
-            context["assumptions"]["timing"] = (
-                "Taken now; no month was given in the question."
-            )
+            context["assumptions"]["timing"] = "Taken now; no month was given in the question."
         else:
-            context["assumptions"]["timing"] = (
-                f"{intent.parameters.year:04d}-{month:02d}"
-            )
+            context["assumptions"]["timing"] = f"{intent.parameters.year:04d}-{month:02d}"
         context["assumptions"]["horizon_months"] = str(AFFORDABILITY_HORIZON_MONTHS)
 
         return (
@@ -291,9 +291,7 @@ class AssistantService:
 
         figures = [
             Figure("Net worth", payload["net_worth"] or "0", "rand", "net_worth_engine"),
-            Figure(
-                "Liquid savings", payload["liquid_savings"] or "0", "rand", "position_service"
-            ),
+            Figure("Liquid savings", payload["liquid_savings"] or "0", "rand", "position_service"),
             Figure("Total debt", payload["total_debt"] or "0", "rand", "position_service"),
             Figure(
                 "Emergency fund",
@@ -358,18 +356,13 @@ class AssistantService:
         debts = self._debts.list_for_user(user_id=user_id)
         total_balance = sum((d.current_balance for d in debts), Decimal("0"))
         total_payments = sum(
-            (
-                (d.instalment if d.instalment is not None else d.minimum_payment)
-                for d in debts
-            ),
+            ((d.instalment if d.instalment is not None else d.minimum_payment) for d in debts),
             Decimal("0"),
         )
         figures = [
             Figure("Debts tracked", str(len(debts)), "count", "debt_repository"),
             Figure("Total debt balance", str(total_balance), "rand", "debt_repository"),
-            Figure(
-                "Monthly debt repayments", str(total_payments), "rand", "debt_repository"
-            ),
+            Figure("Monthly debt repayments", str(total_payments), "rand", "debt_repository"),
         ]
 
         if debts:
@@ -495,9 +488,7 @@ class AssistantService:
         if conversation_id is not None:
             conversation = self._conversations.get_for_user(conversation_id, user_id=user_id)
             if conversation is None:
-                raise NotFoundError(
-                    "No conversation with that identifier exists for this user."
-                )
+                raise NotFoundError("No conversation with that identifier exists for this user.")
         if conversation is None:
             conversation = self._conversations.add_conversation(
                 AssistantConversation(

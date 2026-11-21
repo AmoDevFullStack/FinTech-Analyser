@@ -1,0 +1,40 @@
+# Weekly dependency updates, grouped so minor/patch bumps arrive as one PR per ecosystem
+# rather than one per package. Every PR runs the full CI pipeline before it can merge.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /backend
+    schedule: { interval: weekly, day: monday }
+    groups:
+      python-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: weekly, day: monday }
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: pip
+    directory: /scripts
+    schedule: { interval: weekly, day: monday }
+    groups:
+      scripts-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: terraform
+    directories:
+      - /infrastructure/terraform/bootstrap
+      - /infrastructure/terraform/global
+      - /infrastructure/terraform/envs/staging
+      - /infrastructure/terraform/envs/production
+    schedule: { interval: weekly, day: monday }
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }
+
+  - package-ecosystem: docker
+    directories: [/backend, /frontend]
+    schedule: { interval: weekly, day: monday }

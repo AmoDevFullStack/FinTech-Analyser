@@ -155,9 +155,7 @@ def summarise(
         raise ValueError(f"materiality must be >= 0, got {materiality}")
 
     comparisons = [
-        comparison
-        for month in history
-        if (comparison := month.for_metric(metric)) is not None
+        comparison for month in history if (comparison := month.for_metric(metric)) is not None
     ]
     if not comparisons:
         return AccuracySummary(
@@ -171,9 +169,7 @@ def summarise(
         )
 
     count = Decimal(len(comparisons))
-    mean_absolute = _quantise(
-        sum((c.absolute_error for c in comparisons), Decimal("0")) / count
-    )
+    mean_absolute = _quantise(sum((c.absolute_error for c in comparisons), Decimal("0")) / count)
 
     percentages = [c.percentage_error for c in comparisons if c.percentage_error is not None]
     mean_percentage = (

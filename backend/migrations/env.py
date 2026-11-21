@@ -5,10 +5,10 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+import app.models  # noqa: F401  ensures every model is registered on Base.metadata
 from app.core.config import load_config
 from app.models.base import Base
 from app.models.schemas import ALL_SCHEMAS, ensure_schemas
-import app.models  # noqa: F401  ensures every model is registered on Base.metadata
 
 config = context.config
 if config.config_file_name is not None:

@@ -37,8 +37,7 @@ class ColumnMapping:
         has_split = self.debit_column is not None and self.credit_column is not None
         if has_single == has_split:
             raise ValueError(
-                "ColumnMapping needs exactly one of amount_column or "
-                "debit_column+credit_column."
+                "ColumnMapping needs exactly one of amount_column or " "debit_column+credit_column."
             )
 
 
@@ -52,13 +51,7 @@ def _to_decimal(raw: str) -> Decimal:
     Raises:
         ValueError: if the cell is not a number once separators are removed.
     """
-    cleaned = (
-        raw.replace(" ", "")
-        .replace(" ", "")
-        .replace(" ", "")
-        .replace(",", "")
-        .strip()
-    )
+    cleaned = raw.replace(" ", "").replace(" ", "").replace(" ", "").replace(",", "").strip()
     if not cleaned:
         return Decimal("0")
     try:
@@ -174,7 +167,12 @@ def detect_capitec(header: list[str]) -> ColumnMapping | None:
     return None
 
 
-DISCOVERY_HEADER = {"Transaction Date", "Transaction Description", "Transaction Amount", "Running Balance"}
+DISCOVERY_HEADER = {
+    "Transaction Date",
+    "Transaction Description",
+    "Transaction Amount",
+    "Running Balance",
+}
 
 
 def detect_discovery(header: list[str]) -> ColumnMapping | None:

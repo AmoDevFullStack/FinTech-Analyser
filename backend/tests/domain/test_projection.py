@@ -114,9 +114,7 @@ def test_an_existing_debt_schedule_runs_the_balance_down_and_builds_net_worth() 
         monthly_discretionary=Decimal("5000.00"),
     )
 
-    periods = project_forward(
-        position=position, horizon_months=30, existing_debt_schedule=schedule
-    )
+    periods = project_forward(position=position, horizon_months=30, existing_debt_schedule=schedule)
 
     # The instalment leaves cash flow ...
     assert periods[0].cash_flow == Decimal("13000.00") - schedule[0].instalment
@@ -173,6 +171,4 @@ def test_negative_monthly_debt_service_is_rejected() -> None:
         monthly_discretionary=Decimal("0.00"),
     )
     with pytest.raises(ValueError, match="monthly_debt_service"):
-        project_forward(
-            position=position, horizon_months=1, monthly_debt_service=Decimal("-1")
-        )
+        project_forward(position=position, horizon_months=1, monthly_debt_service=Decimal("-1"))

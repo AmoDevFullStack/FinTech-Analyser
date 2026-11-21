@@ -87,9 +87,7 @@ def _by_month(assessments):
 
 
 def _ratio(assessment, component: str) -> Decimal:
-    return Decimal(
-        {c["name"]: c for c in assessment.breakdown["components"]}[component]["ratio"]
-    )
+    return Decimal({c["name"]: c for c in assessment.breakdown["components"]}[component]["ratio"])
 
 
 def test_each_month_is_scored_on_its_own_transactions(household):

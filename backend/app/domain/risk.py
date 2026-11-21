@@ -301,9 +301,7 @@ def detect_emergency_reserve_depletion(
                 details={
                     "month": period.month,
                     "projected_cover_months": str(
-                        period.emergency_fund_months.quantize(
-                            RATE_PLACES, rounding=ROUND_HALF_UP
-                        )
+                        period.emergency_fund_months.quantize(RATE_PLACES, rounding=ROUND_HALF_UP)
                     ),
                     "floor_months": str(floor_months),
                 },
@@ -338,9 +336,7 @@ def detect_debt_burden(
         ValueError: if monthly_debt_service < 0 or threshold <= 0.
     """
     if monthly_debt_service < 0:
-        raise ValueError(
-            f"monthly_debt_service must be >= 0, got {monthly_debt_service}"
-        )
+        raise ValueError(f"monthly_debt_service must be >= 0, got {monthly_debt_service}")
     if threshold <= 0:
         raise ValueError(f"threshold must be positive, got {threshold}")
     if monthly_income <= 0:

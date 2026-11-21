@@ -53,10 +53,7 @@ def ensure_system_categories(session: DbSession) -> list[Category]:
     side effect.
     """
     repository = CategoryRepository(session)
-    existing = {
-        category.name.lower(): category
-        for category in repository.list_system()
-    }
+    existing = {category.name.lower(): category for category in repository.list_system()}
 
     created: list[Category] = []
     for name, kind in system_category_definitions():

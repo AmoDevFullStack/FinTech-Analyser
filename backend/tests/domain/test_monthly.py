@@ -20,7 +20,9 @@ from app.domain.monthly import (
 )
 
 
-def _totals(month, income="52000", essential="16900", discretionary="9800", saving="0", debt_service="0"):
+def _totals(
+    month, income="52000", essential="16900", discretionary="9800", saving="0", debt_service="0"
+):
     return month_totals(
         month=month,
         income=Decimal(income),
@@ -65,9 +67,7 @@ def test_income_keeps_its_sign_so_a_reversed_salary_shows():
     assert reversed_salary.income == Decimal("-52000.00")
 
 
-@pytest.mark.parametrize(
-    "field", ["essential", "discretionary", "saving", "debt_service"]
-)
+@pytest.mark.parametrize("field", ["essential", "discretionary", "saving", "debt_service"])
 def test_a_negative_spending_kind_is_rejected(field):
     """The sign convention applied twice upstream is a bug, not a number to pass on."""
     with pytest.raises(ValueError, match=field):
@@ -183,9 +183,7 @@ def test_movements_out_of_order_are_rejected():
 
 def test_a_repeated_month_is_rejected():
     with pytest.raises(ValueError, match="repeats"):
-        balance_history(
-            closing_balance=Decimal("48200"), movements=[MOVEMENTS[0], MOVEMENTS[0]]
-        )
+        balance_history(closing_balance=Decimal("48200"), movements=[MOVEMENTS[0], MOVEMENTS[0]])
 
 
 def test_an_empty_window_produces_no_balances():
@@ -196,7 +194,11 @@ def test_an_empty_window_produces_no_balances():
 # Invariants
 # ---------------------------------------------------------------------------------------
 _MONEY = st.decimals(
-    min_value=Decimal("0"), max_value=Decimal("250000"), places=2, allow_nan=False, allow_infinity=False
+    min_value=Decimal("0"),
+    max_value=Decimal("250000"),
+    places=2,
+    allow_nan=False,
+    allow_infinity=False,
 )
 
 
@@ -212,9 +214,7 @@ def test_the_walk_always_returns_to_the_balance_it_started_from(inflows, closing
     history = balance_history(closing_balance=closing, movements=movements)
 
     assert history[-1].closing == closing
-    walked = history[0].opening + sum(
-        balance.inflow - balance.outflow for balance in history
-    )
+    walked = history[0].opening + sum(balance.inflow - balance.outflow for balance in history)
     assert walked == closing
 
 

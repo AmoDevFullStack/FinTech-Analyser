@@ -1,0 +1,2 @@
+# Runtime dependencies of scripts/aws_deploy.py (smoke_test.py needs only the stdlib).
+boto3==1.44.9

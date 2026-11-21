@@ -38,7 +38,9 @@ def _cached_interpreter(
         # A provider that cannot even be constructed must not take the endpoint with it:
         # the figures are still computable, so fall back to the documented no-narration
         # response rather than failing the request.
-        logger.warning("narration provider unavailable; falling back to figures only", exc_info=True)
+        logger.warning(
+            "narration provider unavailable; falling back to figures only", exc_info=True
+        )
         return NullInterpreter()
 
     return OpenAIInterpreter(client=client, model=model)

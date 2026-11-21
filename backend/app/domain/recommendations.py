@@ -199,9 +199,7 @@ def subscription_audit(
         return None
 
     qualifying = [
-        c
-        for c in candidates
-        if (c.monthly_equivalent / monthly_discretionary) > share_threshold
+        c for c in candidates if (c.monthly_equivalent / monthly_discretionary) > share_threshold
     ]
     if not qualifying:
         return None
@@ -423,9 +421,7 @@ def surplus_not_allocated(
     if persistence_months < 2:
         raise ValueError(f"persistence_months must be >= 2, got {persistence_months}")
     if annual_rate_if_saved < 0:
-        raise ValueError(
-            f"annual_rate_if_saved must be >= 0, got {annual_rate_if_saved}"
-        )
+        raise ValueError(f"annual_rate_if_saved must be >= 0, got {annual_rate_if_saved}")
 
     if len(monthly_surpluses) < persistence_months:
         return None

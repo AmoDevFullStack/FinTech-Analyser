@@ -1,0 +1,98 @@
+# Staging and production on AWS: one EC2 host per environment, database on RDS.
+# Run from published images only; nothing is built on the host.
+#
+# scripts/aws_deploy.py copies this file, remote-deploy.sh and the Caddyfile to the host and
+# runs, through SSM:
+#
+#     docker compose -f docker-compose.prod.yml pull
+#     docker compose -f docker-compose.prod.yml up -d --wait redis
+#     docker compose -f docker-compose.prod.yml run --rm migrate      # alembic upgrade head
+#     docker compose -f docker-compose.prod.yml up -d --wait --remove-orphans backend worker web caddy
+#
+# The migration is a separate, explicit step rather than a depends_on, so a failing migration
+# stops the deploy before any new application container starts — the previous ones keep
+# serving. If it is ever skipped, /api/v1/ready returns 503 and the smoke test fails.
+#
+# .env is rendered from SSM Parameter Store (/fintech-analyser/<env>/app/*) on every deploy:
+#   DATABASE_URL, SECRET_KEY, JWT_SECRET_KEY, APP_DOMAIN, OPENAI_API_KEY (optional)
+#
+# Request path: internet → caddy (TLS, :443) → web (Nginx: SPA + /api proxy) → backend.
+
+x-backend: &backend
+  image: ${IMAGE_REGISTRY:?set IMAGE_REGISTRY to the ECR registry prefix}/backend:${IMAGE_TAG:?set IMAGE_TAG to the commit SHA being deployed}
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    FLASK_ENV: production
+    REDIS_URL: redis://redis:6379/0
+    # Caddy and Nginx each add a hop; the client address is the second from the right of
+    # X-Forwarded-For. Without this, every visitor shares one login rate-limit bucket.
+    TRUSTED_PROXY_COUNT: "2"
+  depends_on:
+    redis:
+      condition: service_healthy
+
+services:
+  # Queue and rate-limit counters only — nothing here that a restart cannot rebuild.
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    <<: *backend
+    profiles: ["tools"]
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+    healthcheck:
+      disable: true
+
+  backend:
+    <<: *backend
+
+  worker:
+    <<: *backend
+    command: ["rq", "worker", "--url", "redis://redis:6379/0"]
+    healthcheck:
+      disable: true
+
+  web:
+    image: ${IMAGE_REGISTRY:?}/frontend:${IMAGE_TAG:?}
+    restart: unless-stopped
+    # Not published: only Caddy reaches it, over the compose network.
+    expose:
+      - "8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      # Read from .env by compose. Empty = plain HTTP on :80 (see the Caddyfile).
+      APP_DOMAIN: ${APP_DOMAIN:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates. Persisted so restarts do not re-issue and hit Let's Encrypt rate limits.
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  redis_data:
+  caddy_data:
+  caddy_config:

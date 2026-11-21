@@ -40,7 +40,9 @@ class Debt(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     account_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("ledger.accounts.id"), nullable=True
     )
-    debt_type: Mapped[DebtType] = mapped_column(pg_enum(DebtType, name="debt_type_enum"), nullable=False)
+    debt_type: Mapped[DebtType] = mapped_column(
+        pg_enum(DebtType, name="debt_type_enum"), nullable=False
+    )
     original_principal: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
     current_balance: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
     annual_rate: Mapped[Decimal] = mapped_column(Numeric(9, 6), nullable=False)
