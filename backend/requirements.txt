@@ -10,7 +10,7 @@ rq==1.16.2
 argon2-cffi==23.1.0
 pyjwt==2.9.0
 pydantic==2.13.5
-gunicorn==22.0.0
+gunicorn==27.0.1
 python-dotenv==1.0.1
 click==8.1.7
 openai==3.14.1
