@@ -35,7 +35,8 @@ class HttpResult:
     content_type: str
 
     def json(self) -> dict[str, Any]:
-        return json.loads(self.body)
+        parsed: dict[str, Any] = json.loads(self.body)
+        return parsed
 
 
 class SmokeTestFailure(Exception):

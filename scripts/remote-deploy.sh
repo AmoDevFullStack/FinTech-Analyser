@@ -1,63 +1,81 @@
 #!/usr/bin/env bash
-# Runs ON the deploy host, invoked over SSH by .github/workflows/deploy.yml.
+# Runs ON the app host, sent by scripts/aws_deploy.py through SSM Run Command.
 #
-#   remote-deploy.sh deploy   <image-tag>   back up, migrate, roll the stack forward
+#   remote-deploy.sh deploy   <image-tag>   render .env, pull, migrate, roll the stack forward
 #   remote-deploy.sh rollback <image-tag>   undo a deploy of <image-tag>, if it got as far
 #                                           as replacing containers
 #
-# Expects, in the working directory (DEPLOY_PATH): docker-compose.prod.yml (copied in by the
-# workflow) and .env (created once by hand — see docs/deployment.md). Writes .deployed-tag
-# and .previous-tag so a rollback knows where to go without asking the pipeline.
+# Works in the deploy directory, where aws_deploy.py has just put docker-compose.prod.yml,
+# this script and the Caddyfile. Writes .deployed-tag and .previous-tag there, so a rollback
+# knows where to go without asking the pipeline.
 #
-# Environment from the workflow: IMAGE_REGISTRY, and REGISTRY_USER/REGISTRY_TOKEN to pull.
+# Environment (exported by aws_deploy.py):
+#   IMAGE_REGISTRY       <account>.dkr.ecr.<region>.amazonaws.com/fintech-analyser
+#   SSM_PARAMETER_PATH   /fintech-analyser/<env>/app — rendered into .env on every deploy
+#   AWS_REGION
+#
+# The database is backed up by aws_deploy.py (an RDS snapshot) before this script runs.
 set -euo pipefail
 
 COMPOSE_FILE="docker-compose.prod.yml"
-BACKUP_DIR="backups"
-BACKUPS_KEPT=10
+APP_SERVICES=(backend worker web caddy)
 
 log() { printf '[deploy %s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
+die() { log "$*"; exit 1; }
 
 compose() { docker compose -f "$COMPOSE_FILE" "$@"; }
 
-registry_login() {
-    if [[ -n "${REGISTRY_TOKEN:-}" ]]; then
-        printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io -u "${REGISTRY_USER:?}" --password-stdin >/dev/null
-    fi
-}
+# A half-written .env temp file may hold secrets; remove it however the script exits.
+ENV_TMP=""
+cleanup() { if [[ -n "$ENV_TMP" ]]; then rm -f "$ENV_TMP"; fi; }
+trap cleanup EXIT
 
-backup_database() {
-    # Before every migration, because a migration is the one step a container rollback
-    # cannot undo. Skipped on a first deploy, when there is no database yet to lose.
-    if ! compose ps --status running --services | grep -qx postgres; then
-        log "postgres not running yet (first deploy?) — skipping backup"
+render_env() {
+    # Configuration lives in Parameter Store, not on the host: each deploy rewrites .env from
+    # it, so a changed secret takes effect on the next deploy and the host holds no state
+    # worth backing up. Without SSM_PARAMETER_PATH, a hand-written .env is used as-is.
+    if [[ -z "${SSM_PARAMETER_PATH:-}" ]]; then
+        [[ -f .env ]] || die "no SSM_PARAMETER_PATH and no .env in $(pwd)"
         return
     fi
-    mkdir -p "$BACKUP_DIR"
-    local file
-    file="$BACKUP_DIR/pre-${IMAGE_TAG:0:12}-$(date -u +%Y%m%dT%H%M%SZ).dump"
-    log "backing up database to $file"
-    # shellcheck disable=SC2016  # $POSTGRES_* expand inside the container, not here.
-    compose exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -Fc "$POSTGRES_DB"' > "$file"
-    # Keep the newest few; financial data backups also belong off-host (docs/deployment.md).
-    find "$BACKUP_DIR" -maxdepth 1 -name 'pre-*.dump' -printf '%T@ %p\n' \
-        | sort -rn | tail -n +$((BACKUPS_KEPT + 1)) | cut -d' ' -f2- | xargs -r rm --
+    ENV_TMP="$(mktemp .env.XXXXXX)"
+    chmod 600 "$ENV_TMP"
+    aws ssm get-parameters-by-path \
+        --path "$SSM_PARAMETER_PATH" \
+        --with-decryption \
+        --query 'Parameters[].[Name,Value]' \
+        --output text \
+        | while IFS=$'\t' read -r name value; do
+            printf '%s=%s\n' "${name##*/}" "$value"
+        done > "$ENV_TMP"
+    grep -q '^DATABASE_URL=' "$ENV_TMP" \
+        || die "no DATABASE_URL under $SSM_PARAMETER_PATH — has Terraform been applied?"
+    mv "$ENV_TMP" .env
+    ENV_TMP=""
+    log "rendered .env from $SSM_PARAMETER_PATH ($(wc -l < .env) settings)"
+}
+
+registry_login() {
+    local registry="${IMAGE_REGISTRY:?IMAGE_REGISTRY is not set}"
+    registry="${registry%%/*}"
+    if [[ "$registry" == *.dkr.ecr.*.amazonaws.com ]]; then
+        # Credentials come from the instance role; the token is valid for 12 hours.
+        aws ecr get-login-password | docker login --username AWS --password-stdin "$registry" >/dev/null
+    fi
 }
 
 deploy() {
     IMAGE_TAG="${1:?usage: remote-deploy.sh deploy <image-tag>}"
     export IMAGE_TAG
 
-    [[ -f .env ]] || { log "missing .env in $(pwd) — see docs/deployment.md"; exit 1; }
-
+    render_env
     registry_login
+
     log "pulling images for $IMAGE_TAG"
     compose pull --quiet
 
-    backup_database
-
-    log "starting data services"
-    compose up -d --wait postgres redis
+    log "starting redis"
+    compose up -d --wait redis
 
     log "running migrations"
     compose run --rm migrate
@@ -70,29 +88,28 @@ deploy() {
     printf '%s\n' "$IMAGE_TAG" > .deployed-tag
 
     log "rolling application containers"
-    compose up -d --wait --remove-orphans backend worker web
+    compose up -d --wait --remove-orphans "${APP_SERVICES[@]}"
 
-    docker image prune -f --filter "until=168h" >/dev/null || true
+    docker image prune -af --filter "until=168h" >/dev/null || true
     log "deployed $IMAGE_TAG"
 }
 
 rollback() {
     local attempted="${1:?usage: remote-deploy.sh rollback <attempted-image-tag>}"
     if [[ "$(cat .deployed-tag 2>/dev/null)" != "$attempted" ]]; then
-        # The failed deploy stopped before touching containers (pull, backup or migration
+        # The failed deploy stopped before touching containers (render, pull or migration
         # failed), so what is running is still the last good release. Leave it alone.
         log "$attempted never replaced the running containers — nothing to roll back"
         return
     fi
-    if [[ ! -f .previous-tag ]]; then
-        log "no previous tag recorded — nothing to roll back to"
-        exit 1
-    fi
+    [[ -f .previous-tag ]] || die "no previous tag recorded — nothing to roll back to"
+
     IMAGE_TAG="$(cat .previous-tag)"
     export IMAGE_TAG
+    render_env
     registry_login
     log "rolling back application containers to $IMAGE_TAG (database is NOT rolled back)"
-    compose up -d --wait --remove-orphans backend worker web
+    compose up -d --wait --remove-orphans "${APP_SERVICES[@]}"
     printf '%s\n' "$IMAGE_TAG" > .deployed-tag
     log "rolled back to $IMAGE_TAG"
 }

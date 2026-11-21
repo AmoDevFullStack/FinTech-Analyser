@@ -1,0 +1,21 @@
+# TLS termination in front of the `web` container (docker-compose.prod.yml).
+#
+# With APP_DOMAIN set (SSM: /fintech-analyser/<env>/app/APP_DOMAIN), Caddy obtains and renews
+# a Let's Encrypt certificate for it automatically and redirects HTTP to HTTPS. DNS must point
+# at the instance's elastic IP first, or issuance fails and Caddy retries with backoff.
+#
+# Without APP_DOMAIN it serves plain HTTP on :80 — enough to see the stack is up, but logins
+# will not stick, because the app sets Secure session cookies outside development.
+
+{$APP_DOMAIN::80} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+
+	# Caddy replaces any client-supplied X-Forwarded-For with the real client address, so the
+	# backend can trust exactly two proxies (Caddy, then Nginx): TRUSTED_PROXY_COUNT=2.
+	reverse_proxy web:8080
+}
