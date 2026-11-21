@@ -74,6 +74,15 @@ class Config:
         )
     )
 
+    # Reverse proxies in front of gunicorn whose X-Forwarded-For entries are trusted. 0 means
+    # none: request.remote_addr is the TCP peer. Behind Caddy -> Nginx (docker-compose.prod.yml)
+    # it is 2; without it, every client appears as the Nginx container and shares one login
+    # rate-limit bucket. Never set it higher than the real number of proxies, or a client can
+    # choose its own address by sending the header.
+    TRUSTED_PROXY_COUNT: int = field(
+        default_factory=lambda: int(os.environ.get("TRUSTED_PROXY_COUNT", "0"))
+    )
+
     # Build identity, baked into the image by .github/workflows/cd.yml and reported by
     # GET /api/v1/version. The defaults are what a local, unreleased build reports.
     APP_VERSION: str = field(default_factory=lambda: os.environ.get("APP_VERSION", "dev"))
