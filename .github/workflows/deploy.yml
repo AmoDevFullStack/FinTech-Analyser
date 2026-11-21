@@ -1,12 +1,14 @@
 name: Deploy (reusable)
 
-# Called by cd.yml for both environments. One definition, so staging rehearses exactly the
-# steps production will run. Each GitHub environment (Settings → Environments) carries its
-# own secrets and variables; production should also require a reviewer.
+# Called by cd.yml for both environments: one definition, so staging rehearses exactly what
+# production will run. All AWS access is through the environment's OIDC deploy role — no AWS
+# keys are stored in GitHub. See docs/deployment.md for setup.
 #
-# Per environment:
-#   secrets  DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS
-#   vars     APP_URL (public base URL, used by the smoke test), DEPLOY_PATH (optional)
+# Per GitHub environment (Settings → Environments → staging / production):
+#   variables  AWS_DEPLOY_ROLE_ARN   terraform output deploy_role_arn
+#              APP_URL               terraform output app_url (https://..., no trailing slash)
+# Repository variable:
+#              AWS_REGION            e.g. af-south-1
 
 on:
   workflow_call:
@@ -22,7 +24,7 @@ on:
 
 permissions:
   contents: read
-  packages: read
+  id-token: write
 
 jobs:
   deploy:
@@ -32,12 +34,11 @@ jobs:
       name: ${{ inputs.environment }}
       url: ${{ vars.APP_URL }}
     concurrency:
-      # Never two deploys to the same environment at once; queue rather than cancel, because
-      # cancelling a deploy halfway through a migration is the worst place to stop.
+      # Never two deploys to one environment at once; queue rather than cancel, because
+      # cancelling halfway through a migration is the worst place to stop.
       group: deploy-${{ inputs.environment }}
       cancel-in-progress: false
     env:
-      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/fintech-analyser' }}
       IMAGE_TAG: ${{ inputs.image_tag }}
       TARGET_ENV: ${{ inputs.environment }}
       APP_URL: ${{ vars.APP_URL }}
@@ -46,57 +47,32 @@ jobs:
         with:
           ref: ${{ inputs.image_tag }}
 
-      - name: Configure SSH
-        env:
-          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          # Pinned host key, not StrictHostKeyChecking=no: the deploy carries registry
-          # credentials and runs migrations, so it must refuse an impostor host.
-          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          printf 'Host target\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy_key\n  IdentitiesOnly yes\n' \
-            "$DEPLOY_HOST" "$DEPLOY_USER" > ~/.ssh/config
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: deploy-${{ inputs.environment }}-${{ github.run_id }}
 
-      - name: Copy release files
-        run: |
-          # shellcheck disable=SC2029  # DEPLOY_PATH is meant to expand on this side.
-          ssh target "mkdir -p '$DEPLOY_PATH'"
-          scp docker-compose.prod.yml scripts/remote-deploy.sh "target:$DEPLOY_PATH/"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements.txt
+      - run: pip install -r scripts/requirements.txt
 
+      # Uploads release files, snapshots RDS, then runs remote-deploy.sh on the host via SSM
+      # (render .env from Parameter Store, pull from ECR, migrate, roll containers).
       - name: Deploy
-        id: deploy
-        env:
-          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          registry="ghcr.io/${GITHUB_REPOSITORY,,}"
-          # The token is piped on stdin rather than put on the remote command line, where it
-          # would be visible in the host's process list.
-          # shellcheck disable=SC2029  # values are expanded here and passed as literals.
-          printf '%s\n' "$REGISTRY_TOKEN" | ssh target \
-            "cd '$DEPLOY_PATH' && read -r REGISTRY_TOKEN && export REGISTRY_TOKEN \
-             REGISTRY_USER='$GITHUB_ACTOR' IMAGE_REGISTRY='$registry' \
-             && bash remote-deploy.sh deploy '$IMAGE_TAG'"
+        run: python scripts/aws_deploy.py deploy --environment "$TARGET_ENV" --image-tag "$IMAGE_TAG"
 
       - name: Smoke test
         run: python3 scripts/smoke_test.py "$APP_URL" --expect-commit "$IMAGE_TAG" --timeout 180
 
       - name: Roll back on failure
         if: failure()
-        env:
-          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          registry="ghcr.io/${GITHUB_REPOSITORY,,}"
-          # shellcheck disable=SC2029  # values are expanded here and passed as literals.
-          printf '%s\n' "$REGISTRY_TOKEN" | ssh target \
-            "cd '$DEPLOY_PATH' && read -r REGISTRY_TOKEN && export REGISTRY_TOKEN \
-             REGISTRY_USER='$GITHUB_ACTOR' IMAGE_REGISTRY='$registry' \
-             && bash remote-deploy.sh rollback '$IMAGE_TAG'"
-          echo "::error::Deploy of $IMAGE_TAG to $TARGET_ENV failed and was rolled back. The database was not rolled back — see docs/deployment.md."
+          python scripts/aws_deploy.py rollback --environment "$TARGET_ENV" --image-tag "$IMAGE_TAG"
+          echo "::error::Deploy of $IMAGE_TAG to $TARGET_ENV failed and the containers were rolled back. The database was not — see docs/deployment.md §4."
 
       - name: Summary
         if: success()
