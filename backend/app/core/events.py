@@ -87,16 +87,16 @@ def registered_events() -> tuple[str, ...]:
     return tuple(sorted(_HANDLERS))
 
 
-def record(session: DbSession, *, user_id: UUID, name: str, payload: dict | None = None) -> DomainEvent:
+def record(
+    session: DbSession, *, user_id: UUID, name: str, payload: dict | None = None
+) -> DomainEvent:
     """Write the event. The caller's transaction is what makes it true.
 
     Deliberately no commit and no flush here: the event has to land or not land with the
     work it describes, and committing it early would let a failed import leave behind a
     record that it succeeded.
     """
-    return DomainEventRepository(session).add(
-        user_id=user_id, name=name, payload=payload or {}
-    )
+    return DomainEventRepository(session).add(user_id=user_id, name=name, payload=payload or {})
 
 
 @dataclass(frozen=True, slots=True)
@@ -131,9 +131,7 @@ def dispatch_pending(
     event that exhausted MAX_ATTEMPTS.
     """
     repository = DomainEventRepository(session)
-    claimed = repository.claim_pending(
-        user_id=user_id, limit=limit, max_attempts=MAX_ATTEMPTS
-    )
+    claimed = repository.claim_pending(user_id=user_id, limit=limit, max_attempts=MAX_ATTEMPTS)
 
     processed = 0
     failed = 0

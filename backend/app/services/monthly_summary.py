@@ -149,8 +149,10 @@ class MonthlySummaryService:
         self, *, since: date | None, until: date | None, as_of: date
     ) -> tuple[date, date]:
         end = _month_end(until or as_of)
-        start = _month_start(since) if since is not None else _add_months(
-            _month_start(end), -(DEFAULT_MONTHS - 1)
+        start = (
+            _month_start(since)
+            if since is not None
+            else _add_months(_month_start(end), -(DEFAULT_MONTHS - 1))
         )
 
         if start > end:
@@ -221,9 +223,7 @@ class MonthlySummaryService:
         if not cash_accounts:
             return {}, counts
 
-        closing_balance = sum(
-            (account.current_balance for account in cash_accounts), Decimal("0")
-        )
+        closing_balance = sum((account.current_balance for account in cash_accounts), Decimal("0"))
         cash_movements = self._transactions.monthly_movements(
             user_id=user_id,
             since=read_from,

@@ -75,9 +75,7 @@ def get_accuracy():
                         "absolute_error": str(row.absolute_error),
                         "signed_error": str(row.signed_error),
                         "percentage_error": (
-                            str(row.percentage_error)
-                            if row.percentage_error is not None
-                            else None
+                            str(row.percentage_error) if row.percentage_error is not None else None
                         ),
                         "engine_version": row.engine_version,
                     }

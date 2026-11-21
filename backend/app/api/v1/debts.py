@@ -104,12 +104,8 @@ def get_what_if(debt_id):
     compared against the same debt's baseline (extra_monthly=0) schedule.
     """
     query = parse_query(WhatIfQuery)
-    increments = (
-        tuple(query.increments) if query.increments else DEFAULT_WHAT_IF_INCREMENTS
-    )
-    results = DebtService(db.session).what_if(
-        debt_id, user_id=g.user_id, increments=increments
-    )
+    increments = tuple(query.increments) if query.increments else DEFAULT_WHAT_IF_INCREMENTS
+    results = DebtService(db.session).what_if(debt_id, user_id=g.user_id, increments=increments)
     return jsonify({"data": [what_if_dict(r) for r in results]}), 200
 
 

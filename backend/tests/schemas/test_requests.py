@@ -101,9 +101,7 @@ def test_an_unknown_filter_is_rejected_rather_than_silently_ignored() -> None:
 
 
 def test_enum_filters_parse_to_their_members() -> None:
-    parsed = query(
-        TransactionQuery, "payment_method=debit_order&spending_purpose=rent"
-    )
+    parsed = query(TransactionQuery, "payment_method=debit_order&spending_purpose=rent")
 
     assert parsed.payment_method is PaymentMethod.DEBIT_ORDER
     assert parsed.spending_purpose is SpendingPurpose.RENT

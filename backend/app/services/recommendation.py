@@ -21,7 +21,6 @@ from app.domain.debt_payoff import DebtInput
 from app.domain.recommendations import (
     MAX_ACTIVE,
     GoalShortfall,
-    Recommendation as RuleResult,
     Rule,
     SubscriptionCandidate,
     build_emergency_cover,
@@ -32,6 +31,9 @@ from app.domain.recommendations import (
     subscription_audit,
     surplus_not_allocated,
     utilisation_reduction,
+)
+from app.domain.recommendations import (
+    Recommendation as RuleResult,
 )
 from app.models.account import AccountType
 from app.models.category import CategoryKind
@@ -99,7 +101,11 @@ def compose_explanation(result: RuleResult) -> str:
 
     if result.rule is Rule.GOAL_CONTRIBUTION_SHORTFALL:
         slippage = details.get("slippage_months")
-        tail = f" At the observed rate the target date moves out by {slippage} months." if slippage else ""
+        tail = (
+            f" At the observed rate the target date moves out by {slippage} months."
+            if slippage
+            else ""
+        )
         return (
             f"{details['goal_name']} needs "
             f"{_rand(Decimal(details['required_monthly']))} a month and is receiving "
@@ -171,18 +177,14 @@ class RecommendationService:
         position = self._position.compute_current(user_id=user_id, as_of=as_of)
         accounts = self._accounts.list_for_user(user_id=user_id)
         forecast = self._forecasts.latest_for_user(user_id=user_id)
-        reference = (
-            f"forecast:{forecast.id}" if forecast else f"position:{as_of.isoformat()}"
-        )
+        reference = f"forecast:{forecast.id}" if forecast else f"position:{as_of.isoformat()}"
 
         debts = [
             DebtInput(
                 id=str(d.id),
                 current_balance=d.current_balance,
                 annual_rate=d.annual_rate,
-                minimum_payment=(
-                    d.instalment if d.instalment is not None else d.minimum_payment
-                ),
+                minimum_payment=(d.instalment if d.instalment is not None else d.minimum_payment),
             )
             for d in self._debts.list_for_user(user_id=user_id)
             if d.current_balance > 0
@@ -198,9 +200,7 @@ class RecommendationService:
         revolving_balance = sum(
             (max(Decimal("0"), -a.current_balance) for a in credit_accounts), Decimal("0")
         )
-        credit_limit = sum(
-            (a.credit_limit or Decimal("0") for a in credit_accounts), Decimal("0")
-        )
+        credit_limit = sum((a.credit_limit or Decimal("0") for a in credit_accounts), Decimal("0"))
 
         candidates = [
             SubscriptionCandidate(
@@ -210,8 +210,7 @@ class RecommendationService:
                 last_charged_on=view.series.last_seen.isoformat(),
             )
             for view in self._recurrence.detect(user_id=user_id)
-            if view.category_kind is CategoryKind.DISCRETIONARY
-            and view.series.median_amount < 0
+            if view.category_kind is CategoryKind.DISCRETIONARY and view.series.median_amount < 0
         ]
 
         results = [
@@ -283,18 +282,14 @@ class RecommendationService:
 
     def _reconcile(self, *, user_id: UUID, result: RuleResult, as_of: date) -> None:
         """Update, suppress, or create — the lifecycle rules from the spec."""
-        existing = self._recommendations.latest_of_rule(
-            user_id=user_id, rule_id=result.rule.value
-        )
+        existing = self._recommendations.latest_of_rule(user_id=user_id, rule_id=result.rule.value)
         explanation = compose_explanation(result)
 
         if existing is not None and existing.status is RecommendationStatus.DISMISSED:
             dismissed_at = existing.dismissed_at
-            still_suppressed = (
-                dismissed_at is not None
-                and datetime.now(UTC) - dismissed_at
-                < timedelta(days=DISMISSAL_SUPPRESSION_DAYS)
-            )
+            still_suppressed = dismissed_at is not None and datetime.now(
+                UTC
+            ) - dismissed_at < timedelta(days=DISMISSAL_SUPPRESSION_DAYS)
             materially_better = result.benefit_amount > existing.benefit_amount * MATERIAL_INCREASE
             if still_suppressed and not materially_better:
                 return
@@ -341,11 +336,7 @@ class RecommendationService:
         return recommendation
 
     def _get(self, recommendation_id: UUID, *, user_id: UUID) -> Recommendation:
-        recommendation = self._recommendations.get_for_user(
-            recommendation_id, user_id=user_id
-        )
+        recommendation = self._recommendations.get_for_user(recommendation_id, user_id=user_id)
         if recommendation is None:
-            raise NotFoundError(
-                "No recommendation with that identifier exists for this user."
-            )
+            raise NotFoundError("No recommendation with that identifier exists for this user.")
         return recommendation

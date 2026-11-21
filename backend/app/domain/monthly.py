@@ -68,9 +68,7 @@ class MonthTotals:
         Saving is included: a month that put R3,000 away had R3,000 less available, and a
         spending figure that hides it overstates what was free.
         """
-        return _quantise(
-            self.essential + self.discretionary + self.saving + self.debt_service
-        )
+        return _quantise(self.essential + self.discretionary + self.saving + self.debt_service)
 
     @property
     def net(self) -> Decimal:
@@ -175,9 +173,7 @@ def month_totals(
     )
 
 
-def compare_months(
-    *, current: MonthTotals, previous: MonthTotals | None
-) -> MonthComparison:
+def compare_months(*, current: MonthTotals, previous: MonthTotals | None) -> MonthComparison:
     """Every figure of `current` against the same figure of `previous`.
 
     Formula:
@@ -201,9 +197,7 @@ def compare_months(
         raise ValueError(f"cannot compare month {current.month} against itself")
 
     if previous is None:
-        return MonthComparison(
-            month=current.month, previous_month=None, totals=current, changes=()
-        )
+        return MonthComparison(month=current.month, previous_month=None, totals=current, changes=())
 
     changes = tuple(
         _change(metric, getattr(previous, metric), getattr(current, metric))

@@ -130,9 +130,7 @@ def months_to_target(
     if target_amount <= 0:
         raise ValueError(f"target_amount must be positive, got {target_amount}")
     if monthly_contribution < 0:
-        raise ValueError(
-            f"monthly_contribution must be >= 0, got {monthly_contribution}"
-        )
+        raise ValueError(f"monthly_contribution must be >= 0, got {monthly_contribution}")
     if annual_rate < 0:
         raise ValueError(f"annual_rate must be >= 0, got {annual_rate}")
 
@@ -202,9 +200,7 @@ def assess_goal(
     if target_amount <= 0:
         raise ValueError(f"target_amount must be positive, got {target_amount}")
     if observed_monthly_rate < 0:
-        raise ValueError(
-            f"observed_monthly_rate must be >= 0, got {observed_monthly_rate}"
-        )
+        raise ValueError(f"observed_monthly_rate must be >= 0, got {observed_monthly_rate}")
     if annual_rate < 0:
         raise ValueError(f"annual_rate must be >= 0, got {annual_rate}")
 
@@ -228,14 +224,14 @@ def assess_goal(
         annual_rate=annual_rate,
     )
     projected_date = (
-        add_months(start=as_of, months=projected_months)
-        if projected_months is not None
-        else None
+        add_months(start=as_of, months=projected_months) if projected_months is not None else None
     )
 
     is_achievable = already_met or (months_remaining >= 1 and required <= available_cash_flow)
-    shortfall = Decimal("0.00") if is_achievable else _quantise(
-        max(Decimal("0"), required - available_cash_flow)
+    shortfall = (
+        Decimal("0.00")
+        if is_achievable
+        else _quantise(max(Decimal("0"), required - available_cash_flow))
     )
     slippage = (
         projected_months - months_remaining

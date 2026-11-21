@@ -48,9 +48,7 @@ class GoalRepository:
 
     def list_for_user(self, *, user_id: UUID) -> list[Goal]:
         return list(
-            self._session.scalars(
-                select(Goal).from_statement(_LIST_FOR_USER), {"user_id": user_id}
-            )
+            self._session.scalars(select(Goal).from_statement(_LIST_FOR_USER), {"user_id": user_id})
         )
 
     def get_for_user(self, goal_id: UUID, *, user_id: UUID) -> Goal | None:

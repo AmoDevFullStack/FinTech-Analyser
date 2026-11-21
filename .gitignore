@@ -25,3 +25,10 @@ coverage/
 # Python environments
 .venv/
 venv/
+
+# Test and coverage output
+.coverage
+coverage.xml
+htmlcov/
+playwright-report/
+test-results/
