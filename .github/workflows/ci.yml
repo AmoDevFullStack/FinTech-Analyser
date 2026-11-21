@@ -150,6 +150,48 @@ jobs:
       - run: npm test -- --run
       - run: npm run build
 
+  scripts:
+    name: Deploy tooling · tests and types
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scripts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: scripts/requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check . && ruff format --check .
+      - run: mypy --strict aws_deploy.py smoke_test.py && mypy tests
+      # aws_deploy.py against moto's in-memory AWS: S3 upload, RDS snapshot + pruning, SSM.
+      - run: pytest -q
+      - run: shellcheck remote-deploy.sh
+
+  infra:
+    name: Terraform · format and validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infrastructure/terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.13"
+      - run: terraform fmt -recursive -check -diff
+      # -backend=false: validates every stack without AWS credentials or state access.
+      - name: Validate every stack
+        run: |
+          for stack in bootstrap global envs/staging envs/production; do
+            echo "::group::$stack"
+            terraform -chdir="$stack" init -backend=false -input=false
+            terraform -chdir="$stack" validate
+            echo "::endgroup::"
+          done
+
   docker:
     name: Docker · production images build
     runs-on: ubuntu-latest

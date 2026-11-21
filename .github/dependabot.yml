@@ -16,6 +16,21 @@ updates:
       npm-minor-patch:
         update-types: [minor, patch]
 
+  - package-ecosystem: pip
+    directory: /scripts
+    schedule: { interval: weekly, day: monday }
+    groups:
+      scripts-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: terraform
+    directories:
+      - /infrastructure/terraform/bootstrap
+      - /infrastructure/terraform/global
+      - /infrastructure/terraform/envs/staging
+      - /infrastructure/terraform/envs/production
+    schedule: { interval: weekly, day: monday }
+
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly, day: monday }

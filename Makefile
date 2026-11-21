@@ -11,13 +11,14 @@ COMPOSE  := docker compose
 
 .DEFAULT_GOAL := help
 .PHONY: help clean clean-all fix lint typecheck check up down migrate seed test test-backend \
-        test-domain test-frontend e2e smoke
+        test-domain test-frontend test-scripts e2e smoke infra-fmt infra-validate
 
 help: ## List targets
 	@grep -E '^[a-z0-9-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "} {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
 clean: ## Delete caches and build output (keeps .env and node_modules)
-	find $(BACKEND) -type d -name __pycache__ -prune -exec rm -rf {} +
+	find $(BACKEND) scripts -type d -name __pycache__ -prune -exec rm -rf {} +
+	rm -rf scripts/.pytest_cache scripts/.mypy_cache scripts/.ruff_cache
 	rm -rf $(BACKEND)/.pytest_cache $(BACKEND)/.mypy_cache $(BACKEND)/.ruff_cache \
 	       $(BACKEND)/.hypothesis $(BACKEND)/.coverage $(BACKEND)/coverage.xml $(BACKEND)/htmlcov
 	rm -rf $(FRONTEND)/dist $(FRONTEND)/coverage $(FRONTEND)/playwright-report \
@@ -64,8 +65,21 @@ test-domain: ## Financial engines only, fast
 test-frontend: ## Vitest, single run
 	$(COMPOSE) run --rm frontend npm test -- --run
 
+test-scripts: ## Deploy tooling against mocked AWS (pip install -r scripts/requirements-dev.txt)
+	cd scripts && pytest -q && mypy --strict aws_deploy.py smoke_test.py
+
 e2e: ## Playwright against the running dev stack (run `make seed` first)
 	$(COMPOSE) run --rm playwright
 
 smoke: ## Smoke-test a deployment: make smoke URL=https://staging.example.com
 	python3 scripts/smoke_test.py $(URL)
+
+infra-fmt: ## Format Terraform
+	terraform -chdir=infrastructure/terraform fmt -recursive
+
+infra-validate: ## Validate every Terraform stack (no AWS access needed)
+	@for stack in bootstrap global envs/staging envs/production; do \
+		echo "== $$stack"; \
+		terraform -chdir=infrastructure/terraform/$$stack init -backend=false -input=false >/dev/null && \
+		terraform -chdir=infrastructure/terraform/$$stack validate || exit 1; \
+	done
