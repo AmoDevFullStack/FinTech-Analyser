@@ -1,0 +1,108 @@
+name: Deploy (reusable)
+
+# Called by cd.yml for both environments. One definition, so staging rehearses exactly the
+# steps production will run. Each GitHub environment (Settings → Environments) carries its
+# own secrets and variables; production should also require a reviewer.
+#
+# Per environment:
+#   secrets  DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS
+#   vars     APP_URL (public base URL, used by the smoke test), DEPLOY_PATH (optional)
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: staging or production
+        required: true
+        type: string
+      image_tag:
+        description: Full commit SHA whose images to deploy
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.image_tag }} to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ vars.APP_URL }}
+    concurrency:
+      # Never two deploys to the same environment at once; queue rather than cancel, because
+      # cancelling a deploy halfway through a migration is the worst place to stop.
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    env:
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/fintech-analyser' }}
+      IMAGE_TAG: ${{ inputs.image_tag }}
+      TARGET_ENV: ${{ inputs.environment }}
+      APP_URL: ${{ vars.APP_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.image_tag }}
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Pinned host key, not StrictHostKeyChecking=no: the deploy carries registry
+          # credentials and runs migrations, so it must refuse an impostor host.
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host target\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy_key\n  IdentitiesOnly yes\n' \
+            "$DEPLOY_HOST" "$DEPLOY_USER" > ~/.ssh/config
+
+      - name: Copy release files
+        run: |
+          # shellcheck disable=SC2029  # DEPLOY_PATH is meant to expand on this side.
+          ssh target "mkdir -p '$DEPLOY_PATH'"
+          scp docker-compose.prod.yml scripts/remote-deploy.sh "target:$DEPLOY_PATH/"
+
+      - name: Deploy
+        id: deploy
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          registry="ghcr.io/${GITHUB_REPOSITORY,,}"
+          # The token is piped on stdin rather than put on the remote command line, where it
+          # would be visible in the host's process list.
+          # shellcheck disable=SC2029  # values are expanded here and passed as literals.
+          printf '%s\n' "$REGISTRY_TOKEN" | ssh target \
+            "cd '$DEPLOY_PATH' && read -r REGISTRY_TOKEN && export REGISTRY_TOKEN \
+             REGISTRY_USER='$GITHUB_ACTOR' IMAGE_REGISTRY='$registry' \
+             && bash remote-deploy.sh deploy '$IMAGE_TAG'"
+
+      - name: Smoke test
+        run: python3 scripts/smoke_test.py "$APP_URL" --expect-commit "$IMAGE_TAG" --timeout 180
+
+      - name: Roll back on failure
+        if: failure()
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          registry="ghcr.io/${GITHUB_REPOSITORY,,}"
+          # shellcheck disable=SC2029  # values are expanded here and passed as literals.
+          printf '%s\n' "$REGISTRY_TOKEN" | ssh target \
+            "cd '$DEPLOY_PATH' && read -r REGISTRY_TOKEN && export REGISTRY_TOKEN \
+             REGISTRY_USER='$GITHUB_ACTOR' IMAGE_REGISTRY='$registry' \
+             && bash remote-deploy.sh rollback '$IMAGE_TAG'"
+          echo "::error::Deploy of $IMAGE_TAG to $TARGET_ENV failed and was rolled back. The database was not rolled back — see docs/deployment.md."
+
+      - name: Summary
+        if: success()
+        run: |
+          {
+            echo "### Deployed to $TARGET_ENV"
+            echo "- Commit: \`$IMAGE_TAG\`"
+            echo "- URL: $APP_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
