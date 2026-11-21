@@ -203,7 +203,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       # Build only — cd.yml publishes. Catches a broken Dockerfile on the PR that breaks it,
       # not on the deploy after it merges.
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.image }}
           target: prod
