@@ -1,0 +1,6 @@
+-r requirements.txt
+boto3-stubs[rds,s3,ssm]==1.44.9
+moto[ec2,rds,s3,ssm]==5.2.5
+mypy==1.11.2
+pytest==8.3.2
+ruff==0.6.3
