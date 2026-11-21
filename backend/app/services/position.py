@@ -23,7 +23,6 @@ from decimal import Decimal
 from uuid import UUID
 
 from app.core.db import DbSession
-
 from app.core.errors import NotFoundError
 from app.domain.cash_flow import cash_flow_summary
 from app.domain.emergency_fund import emergency_fund_months
@@ -104,9 +103,7 @@ class PositionService:
             monthly_discretionary=sums[CategoryKind.DISCRETIONARY],
         )
 
-    def baseline_month(
-        self, *, user_id: UUID, as_of: date | None = None
-    ) -> tuple[date, date]:
+    def baseline_month(self, *, user_id: UUID, as_of: date | None = None) -> tuple[date, date]:
         """The month every monthly figure here is measured over.
 
         The most recent month that has transactions, not the current calendar month. On the

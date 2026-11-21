@@ -122,9 +122,7 @@ def test_obligation_coverage_gap_names_the_obligation_date_and_amount() -> None:
 
 def test_obligation_outside_the_horizon_is_skipped_not_assumed_uncovered() -> None:
     periods = [_period("2026-10", inflows="5000", outflows="4000", liquid="1200")]
-    obligations = [
-        Obligation(label="rates", amount=Decimal("90000"), due_on=date(2029, 4, 1))
-    ]
+    obligations = [Obligation(label="rates", amount=Decimal("90000"), due_on=date(2029, 4, 1))]
 
     assert (
         detect_obligation_coverage_gap(

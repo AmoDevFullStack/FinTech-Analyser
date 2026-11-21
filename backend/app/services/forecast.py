@@ -106,9 +106,7 @@ class ForecastService:
         return observations
 
     def _existing_debt_schedule(self, *, user_id: UUID) -> tuple[AmortisationPeriod, ...]:
-        debts = [
-            d for d in self._debts.list_for_user(user_id=user_id) if d.current_balance > 0
-        ]
+        debts = [d for d in self._debts.list_for_user(user_id=user_id) if d.current_balance > 0]
         if not debts:
             return ()
 
@@ -206,9 +204,7 @@ class ForecastService:
             for p in projected
         ]
 
-        self._forecasts.replace_for_user(
-            user_id=user_id, forecast=forecast, periods=period_rows
-        )
+        self._forecasts.replace_for_user(user_id=user_id, forecast=forecast, periods=period_rows)
         self._session.commit()
         return forecast
 
@@ -246,9 +242,7 @@ class ForecastService:
             return []
 
         accounts = self._accounts.list_for_user(user_id=user_id)
-        projected_by_month = {
-            row.month: row for row in self._forecasts.periods_for(forecast.id)
-        }
+        projected_by_month = {row.month: row for row in self._forecasts.periods_for(forecast.id)}
 
         measured: list[MonthAccuracy] = []
         for offset in range(HISTORY_MONTHS, 0, -1):
@@ -284,9 +278,7 @@ class ForecastService:
                 },
             )
             measured.append(accuracy)
-            self._persist_accuracy(
-                user_id=user_id, forecast_id=forecast.id, accuracy=accuracy
-            )
+            self._persist_accuracy(user_id=user_id, forecast_id=forecast.id, accuracy=accuracy)
 
         self._session.commit()
         return measured

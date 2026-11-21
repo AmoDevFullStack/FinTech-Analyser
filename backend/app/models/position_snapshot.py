@@ -5,7 +5,8 @@ from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import DateTime, ForeignKey, Numeric
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, UUIDPrimaryKeyMixin

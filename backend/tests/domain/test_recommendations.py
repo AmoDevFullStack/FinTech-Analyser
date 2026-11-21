@@ -177,9 +177,7 @@ def test_goal_shortfall_reports_the_largest_gap_with_its_slippage() -> None:
         ),
     ]
 
-    recommendation = goal_contribution_shortfall(
-        shortfalls=shortfalls, computation_reference=REF
-    )
+    recommendation = goal_contribution_shortfall(shortfalls=shortfalls, computation_reference=REF)
 
     assert recommendation is not None
     assert recommendation.details["goal_id"] == "g2"
@@ -201,7 +199,7 @@ def test_goal_shortfall_is_silent_when_every_goal_is_on_track() -> None:
 
 
 def test_refinance_candidate_uses_the_users_own_weighted_average_as_the_alternative() -> None:
-    """"No recommendation suggests a product, provider, or instrument" — so the
+    """ "No recommendation suggests a product, provider, or instrument" — so the
     alternative rate can only be one the user already demonstrably has.
     """
     recommendation = refinance_candidate(debts=_debts(), computation_reference=REF)
@@ -266,9 +264,7 @@ def test_ranking_is_by_benefit_and_capped_at_five() -> None:
             computation_reference=REF,
         ),
         goal_contribution_shortfall(
-            shortfalls=[
-                GoalShortfall("g1", "Deposit", Decimal("8000"), Decimal("2000"), 30)
-            ],
+            shortfalls=[GoalShortfall("g1", "Deposit", Decimal("8000"), Decimal("2000"), 30)],
             computation_reference=REF,
         ),
     ]
@@ -303,9 +299,7 @@ def test_every_recommendation_carries_a_computation_reference_and_a_benefit() ->
             computation_reference=REF,
         ),
         refinance_candidate(debts=_debts(), computation_reference=REF),
-        surplus_not_allocated(
-            monthly_surpluses=[Decimal("5000")] * 3, computation_reference=REF
-        ),
+        surplus_not_allocated(monthly_surpluses=[Decimal("5000")] * 3, computation_reference=REF),
     ]
 
     for recommendation in produced:

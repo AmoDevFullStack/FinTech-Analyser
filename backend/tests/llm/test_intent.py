@@ -3,8 +3,8 @@ from decimal import Decimal
 
 from app.llm.intent import (
     Capability,
-    classify,
     clarifying_question,
+    classify,
     extract_parameters,
     small_talk_reply,
     unsupported_explanation,
@@ -12,8 +12,8 @@ from app.llm.intent import (
 from app.llm.interpreter import (
     FIGURE_PROMPT_KEYS,
     SMALL_TALK_CONSTRAINTS,
-    NullInterpreter,
     NarrationPayload,
+    NullInterpreter,
     build_narration_payload,
 )
 
@@ -38,7 +38,7 @@ def test_a_month_already_past_is_read_as_next_year() -> None:
 
 
 def test_missing_amount_asks_rather_than_assuming() -> None:
-    """"Where a required parameter is missing, ask for it rather than assuming.\""""
+    """ "Where a required parameter is missing, ask for it rather than assuming.\" """
     intent = classify("Can I afford a holiday in December?", as_of=AS_OF)
 
     assert intent.capability is Capability.AFFORDABILITY_CHECK
@@ -65,7 +65,7 @@ def test_a_bare_greeting_is_small_talk_not_unsupported() -> None:
 
 
 def test_a_real_capability_phrase_wins_over_an_incidental_greeting() -> None:
-    """"Hi, can I afford a R5,000 phone?" is an affordability check that happens to open
+    """ "Hi, can I afford a R5,000 phone?" is an affordability check that happens to open
     with a greeting, not small talk — the capability loop is checked first.
     """
     intent = classify("Hi, can I afford a R5,000 phone?", as_of=AS_OF)
@@ -73,7 +73,7 @@ def test_a_real_capability_phrase_wins_over_an_incidental_greeting() -> None:
 
 
 def test_a_greeting_word_embedded_in_another_word_is_not_matched() -> None:
-    """"This" contains the substring "hi"; word-boundary matching must not fire on it."""
+    """ "This" contains the substring "hi"; word-boundary matching must not fire on it."""
     intent = classify("This question has nothing to do with money", as_of=AS_OF)
     assert intent.capability is Capability.UNSUPPORTED
 
@@ -112,7 +112,7 @@ def test_amount_formats_a_south_african_user_actually_types() -> None:
 
 
 def test_a_small_bare_number_is_a_count_not_an_amount() -> None:
-    """"in 3 months" must not be read as R3."""
+    """ "in 3 months" must not be read as R3."""
     parameters = extract_parameters("What is my forecast in 3 months?")
     assert parameters.amount is None
     assert parameters.horizon_months == 3

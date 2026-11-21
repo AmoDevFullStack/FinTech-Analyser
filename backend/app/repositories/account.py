@@ -5,7 +5,6 @@ from uuid import UUID
 from sqlalchemy import select, text
 
 from app.core.db import DbSession
-
 from app.models.account import Account
 
 _LIST_FOR_USER = text(

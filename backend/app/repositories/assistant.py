@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from typing import Any, cast
 from uuid import UUID
 
-from sqlalchemy import select, text
+from sqlalchemy import CursorResult, select, text
 
 from app.core.db import DbSession
 from app.models.assistant import AssistantConversation, AssistantMessage
@@ -67,9 +68,7 @@ class AssistantRepository:
             )
         )
 
-    def get_for_user(
-        self, conversation_id: UUID, *, user_id: UUID
-    ) -> AssistantConversation | None:
+    def get_for_user(self, conversation_id: UUID, *, user_id: UUID) -> AssistantConversation | None:
         return self._session.scalars(
             select(AssistantConversation).from_statement(_GET_FOR_USER),
             {"conversation_id": conversation_id, "user_id": user_id},
@@ -104,9 +103,15 @@ class AssistantRepository:
         read-then-delete would delete on the strength of a row someone else could have
         changed in between.
         """
-        removed = self._session.execute(
-            _DELETE_MESSAGES, {"conversation_id": conversation_id, "user_id": user_id}
-        ).rowcount
+        # A DELETE always yields a CursorResult; `execute` is typed as the broader Result,
+        # which has no rowcount, so the narrowing is stated rather than inferred.
+        deleted = cast(
+            CursorResult[Any],
+            self._session.execute(
+                _DELETE_MESSAGES, {"conversation_id": conversation_id, "user_id": user_id}
+            ),
+        )
+        removed = deleted.rowcount
         self._session.execute(
             _DELETE_CONVERSATION, {"conversation_id": conversation_id, "user_id": user_id}
         )

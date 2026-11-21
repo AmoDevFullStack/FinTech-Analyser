@@ -210,9 +210,7 @@ class ScenarioService:
                 id=str(d.id),
                 current_balance=d.current_balance,
                 annual_rate=d.annual_rate,
-                minimum_payment=(
-                    d.instalment if d.instalment is not None else d.minimum_payment
-                ),
+                minimum_payment=(d.instalment if d.instalment is not None else d.minimum_payment),
             )
             for d in debts
             if d.current_balance > 0
@@ -261,7 +259,9 @@ class ScenarioService:
         )
 
         baseline_debt_schedule = self._existing_debt_schedule(user_id=user_id)
-        baseline_debt_service = self._flat_debt_service(user_id=user_id, schedule=baseline_debt_schedule)
+        baseline_debt_service = self._flat_debt_service(
+            user_id=user_id, schedule=baseline_debt_schedule
+        )
         baseline_periods = project_forward(
             position=position,
             horizon_months=DEFAULT_HORIZON_MONTHS,
@@ -292,9 +292,9 @@ class ScenarioService:
             # adding it again here would take it out of cash flow twice.
             scenario_debt_service = Decimal("0")
         else:
-            scenario_debt_service = self._flat_debt_service(
-                user_id=user_id, schedule=()
-            ) + max(Decimal("0"), deltas.additional_debt_repayment)
+            scenario_debt_service = self._flat_debt_service(user_id=user_id, schedule=()) + max(
+                Decimal("0"), deltas.additional_debt_repayment
+            )
 
         scenario_position = FinancialPosition(
             as_of=position.as_of,
@@ -359,10 +359,7 @@ class ScenarioService:
             return Decimal("0")
         debts = self._debts.list_for_user(user_id=user_id)
         return sum(
-            (
-                (d.instalment if d.instalment is not None else d.minimum_payment)
-                for d in debts
-            ),
+            ((d.instalment if d.instalment is not None else d.minimum_payment) for d in debts),
             Decimal("0"),
         )
 
@@ -390,12 +387,16 @@ class ScenarioService:
                 monthly_debt_service=max(Decimal("0"), existing_service),
                 monthly_income=position.monthly_income,
             )
-            dti_after = debt_to_income(
-                monthly_debt_service=max(Decimal("0"), existing_service)
-                + new_instalment
-                + max(Decimal("0"), deltas.additional_debt_repayment),
-                monthly_income=position.monthly_income + deltas.monthly_income_delta,
-            ) if position.monthly_income + deltas.monthly_income_delta > 0 else Decimal("0")
+            dti_after = (
+                debt_to_income(
+                    monthly_debt_service=max(Decimal("0"), existing_service)
+                    + new_instalment
+                    + max(Decimal("0"), deltas.additional_debt_repayment),
+                    monthly_income=position.monthly_income + deltas.monthly_income_delta,
+                )
+                if position.monthly_income + deltas.monthly_income_delta > 0
+                else Decimal("0")
+            )
         else:
             dti_before = Decimal("0")
             dti_after = Decimal("0")

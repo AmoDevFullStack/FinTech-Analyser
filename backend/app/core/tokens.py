@@ -165,9 +165,7 @@ def decode_token(raw: str, *, expected_type: str) -> TokenClaims:
         raise UnauthenticatedError("The token is not valid.") from exc
 
     if payload.get("typ") != expected_type:
-        raise UnauthenticatedError(
-            f"A {expected_type} token is required for this endpoint."
-        )
+        raise UnauthenticatedError(f"A {expected_type} token is required for this endpoint.")
 
     try:
         user_id = UUID(payload["sub"])

@@ -48,9 +48,9 @@ def _impact(before=BEFORE, added=RENT, liquid=LIQUID):
 # --------------------------------------------------------------------------------------
 def test_adding_rent_moves_cash_flow_by_exactly_the_rent() -> None:
     """Hand-computed:
-        before remaining = 52,000 - 16,900 - 9,800 = 25,300.00
-        after  remaining = 52,000 - 31,400 - 9,800 = 10,800.00
-        delta = -14,500.00
+    before remaining = 52,000 - 16,900 - 9,800 = 25,300.00
+    after  remaining = 52,000 - 31,400 - 9,800 = 10,800.00
+    delta = -14,500.00
     """
     change = _impact().change("monthly_cash_flow")
 
@@ -69,8 +69,8 @@ def test_essential_spending_rises_by_the_added_amount() -> None:
 
 def test_cash_flow_margin_matches_the_ratio_of_the_two_surpluses() -> None:
     """Hand-computed:
-        before = 25,300 / 52,000 = 0.4865384615... -> 0.486538
-        after  = 10,800 / 52,000 = 0.2076923077... -> 0.207692
+    before = 25,300 / 52,000 = 0.4865384615... -> 0.486538
+    after  = 10,800 / 52,000 = 0.2076923077... -> 0.207692
     """
     change = _impact().change("cash_flow_margin")
 
@@ -177,9 +177,7 @@ def test_a_negative_income_month_does_not_produce_a_negative_cash_flow_summary_i
     assert impact.change("monthly_cash_flow").after == Decimal("0.00")
 
 
-@pytest.mark.parametrize(
-    "field", ["essential", "discretionary", "saving", "debt_service"]
-)
+@pytest.mark.parametrize("field", ["essential", "discretionary", "saving", "debt_service"])
 def test_a_negative_magnitude_is_rejected_by_name(field: str) -> None:
     """A negative magnitude means the caller mixed up the sign convention. Accepting it
     would produce a plausible wrong number rather than an error."""

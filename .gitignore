@@ -27,3 +27,10 @@ coverage/
 venv/
 # Local AI/design reference material
 .agents/skills/apple-design/
+
+# Test and coverage output
+.coverage
+coverage.xml
+htmlcov/
+playwright-report/
+test-results/

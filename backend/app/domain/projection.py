@@ -100,9 +100,7 @@ def project_forward(
     if horizon_months < 1:
         raise ValueError(f"horizon_months must be >= 1, got {horizon_months}")
     if monthly_debt_service < 0:
-        raise ValueError(
-            f"monthly_debt_service must be >= 0, got {monthly_debt_service}"
-        )
+        raise ValueError(f"monthly_debt_service must be >= 0, got {monthly_debt_service}")
 
     periods: list[PeriodProjection] = []
     savings = position.liquid_savings
@@ -151,9 +149,7 @@ def project_forward(
             - instalment
         )
         savings = _quantise(savings + cash_flow)
-        net_worth = _quantise(
-            net_worth + cash_flow + principal_component + existing_principal
-        )
+        net_worth = _quantise(net_worth + cash_flow + principal_component + existing_principal)
         debt = _quantise(existing_closing + new_debt_closing)
 
         periods.append(

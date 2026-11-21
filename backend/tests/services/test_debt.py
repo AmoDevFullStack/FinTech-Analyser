@@ -13,9 +13,9 @@ from app.core.errors import ValidationError
 from app.domain.cash_flow import debt_to_income
 from app.models.account import Account, AccountType, BalanceSource
 from app.models.category import Category, CategoryKind
+from app.models.debt import DebtType
 from app.models.transaction import Direction, Transaction
 from app.models.user import User
-from app.models.debt import DebtType
 from app.repositories.health_assessment import HealthAssessmentRepository
 from app.services.debt import CreateDebtInput, DebtService
 
@@ -219,7 +219,9 @@ def test_creating_a_debt_switches_the_health_score_to_real_minimum_payments(sess
 
     assessment = HealthAssessmentRepository(session).latest_for_user(user_id=user.id)
     assert assessment is not None
-    debt_component = next(c for c in assessment.breakdown["components"] if c["name"] == "debt_burden")
+    debt_component = next(
+        c for c in assessment.breakdown["components"] if c["name"] == "debt_burden"
+    )
     expected_ratio = debt_to_income(
         monthly_debt_service=Decimal("2000.00"), monthly_income=Decimal("20000.00")
     )

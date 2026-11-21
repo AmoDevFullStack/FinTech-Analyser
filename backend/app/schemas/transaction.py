@@ -96,9 +96,7 @@ def month_report_dict(report) -> dict:
                 # Null where the previous month was zero. The client shows the amount and
                 # no percentage, rather than a 0% that would read as "unchanged".
                 "percentage_change": (
-                    str(change.percentage_change)
-                    if change.percentage_change is not None
-                    else None
+                    str(change.percentage_change) if change.percentage_change is not None else None
                 ),
             }
             for change in comparison.changes

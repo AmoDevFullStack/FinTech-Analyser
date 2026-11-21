@@ -199,21 +199,15 @@ def project_forecast(
             is not a rate), or monthly_debt_service < 0.
     """
     if assumptions.horizon_months < 1:
-        raise ValueError(
-            f"horizon_months must be >= 1, got {assumptions.horizon_months}"
-        )
+        raise ValueError(f"horizon_months must be >= 1, got {assumptions.horizon_months}")
     if assumptions.inflation_annual < -1:
-        raise ValueError(
-            f"inflation_annual must be >= -1, got {assumptions.inflation_annual}"
-        )
+        raise ValueError(f"inflation_annual must be >= -1, got {assumptions.inflation_annual}")
     if assumptions.salary_growth_annual < -1:
         raise ValueError(
             f"salary_growth_annual must be >= -1, got {assumptions.salary_growth_annual}"
         )
     if monthly_debt_service < 0:
-        raise ValueError(
-            f"monthly_debt_service must be >= 0, got {monthly_debt_service}"
-        )
+        raise ValueError(f"monthly_debt_service must be >= 0, got {monthly_debt_service}")
 
     periods: list[ForecastPeriodProjection] = []
     savings = opening_savings
@@ -227,9 +221,7 @@ def project_forecast(
             year += 1
 
         years_elapsed = (t - 1) // 12
-        income = baseline.median_income * (
-            (1 + assumptions.salary_growth_annual) ** years_elapsed
-        )
+        income = baseline.median_income * ((1 + assumptions.salary_growth_annual) ** years_elapsed)
         inflator = (1 + assumptions.inflation_annual) ** years_elapsed
         essential = baseline.median_essential * inflator
         discretionary = baseline.median_discretionary * inflator

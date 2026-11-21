@@ -6,7 +6,6 @@ from decimal import Decimal
 from uuid import UUID
 
 from app.core.db import DbSession
-
 from app.core.errors import NotFoundError, ValidationError
 from app.domain.net_worth import credit_utilisation
 from app.models.account import Account, AccountType, BalanceSource

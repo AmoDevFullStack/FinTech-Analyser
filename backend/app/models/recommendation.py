@@ -1,16 +1,16 @@
 from __future__ import annotations
 
+import enum
 from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, pg_enum
-
-import enum
 
 
 class RecommendationStatus(str, enum.Enum):

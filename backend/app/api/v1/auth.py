@@ -113,15 +113,13 @@ def me():
 @bp.get("/verify")
 @require_auth
 def verify():
-    """"Is this access token still good?", for a client deciding whether to refresh.
+    """ "Is this access token still good?", for a client deciding whether to refresh.
 
     Returns `/auth/me`'s payload plus the token's own expiry, so a client holding only the
     token string does not have to decode a JWT to find out when it dies. Null for a
     cookie-authenticated caller, which has no token to report an expiry for.
     """
     token = bearer_token_from_header(request.headers.get("Authorization"))
-    expires_at = (
-        decode_token(token, expected_type=ACCESS).expires_at if token is not None else None
-    )
+    expires_at = decode_token(token, expected_type=ACCESS).expires_at if token is not None else None
     user = AuthService(db.session).current_user()
     return jsonify({**user_dict(user), "expires_at": expires_at}), 200

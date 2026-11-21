@@ -207,8 +207,14 @@ def _rule(pattern: str) -> re.Pattern[str]:
 # "debit order" must beat the bare "debit" that a card rule would otherwise claim.
 # --------------------------------------------------------------------------------------
 _METHOD_RULES: tuple[tuple[re.Pattern[str], PaymentMethod], ...] = (
-    (_rule(r"\b(?:debit\s*order|d[/\s]*order|deb\s*ord|do\s*pmt|magtape)\b"), PaymentMethod.DEBIT_ORDER),
-    (_rule(r"\b(?:stop\s*order|s[/\s]*order|stop\s*ord|standing\s*order)\b"), PaymentMethod.STOP_ORDER),
+    (
+        _rule(r"\b(?:debit\s*order|d[/\s]*order|deb\s*ord|do\s*pmt|magtape)\b"),
+        PaymentMethod.DEBIT_ORDER,
+    ),
+    (
+        _rule(r"\b(?:stop\s*order|s[/\s]*order|stop\s*ord|standing\s*order)\b"),
+        PaymentMethod.STOP_ORDER,
+    ),
     (_rule(r"\b(?:reversal|reversed|refund|rtn\s*debit|unpaid\s*debit)\b"), PaymentMethod.REVERSAL),
     (_rule(r"\b(?:salary|salaris|payroll|wages|sal\s*dep)\b"), PaymentMethod.SALARY_DEPOSIT),
     (
@@ -217,15 +223,21 @@ _METHOD_RULES: tuple[tuple[re.Pattern[str], PaymentMethod], ...] = (
     ),
     (_rule(r"\b(?:cash\s*dep(?:osit)?|deposit\s*cash|cdm)\b"), PaymentMethod.CASH_DEPOSIT),
     (
-        _rule(r"\b(?:online\s*purch(?:ase)?|internet\s*purch(?:ase)?|e[\s-]*com(?:merce)?|card\s*not\s*present|cnp)\b"),
+        _rule(
+            r"\b(?:online\s*purch(?:ase)?|internet\s*purch(?:ase)?|e[\s-]*com(?:merce)?|card\s*not\s*present|cnp)\b"
+        ),
         PaymentMethod.CARD_ONLINE,
     ),
     (
-        _rule(r"\b(?:pos\s*purch(?:ase)?|card\s*purch(?:ase)?|purch(?:ase)?\s*card|chip\s*(?:and|&)\s*pin|contactless|tap\s*(?:and|&)\s*go|debit\s*card|credit\s*card\s*purch)\b"),
+        _rule(
+            r"\b(?:pos\s*purch(?:ase)?|card\s*purch(?:ase)?|purch(?:ase)?\s*card|chip\s*(?:and|&)\s*pin|contactless|tap\s*(?:and|&)\s*go|debit\s*card|credit\s*card\s*purch)\b"
+        ),
         PaymentMethod.CARD_PURCHASE,
     ),
     (
-        _rule(r"\b(?:payshap|rtc|real\s*time\s*clearing|immediate\s*pay(?:ment)?|instant\s*pay(?:ment)?)\b"),
+        _rule(
+            r"\b(?:payshap|rtc|real\s*time\s*clearing|immediate\s*pay(?:ment)?|instant\s*pay(?:ment)?)\b"
+        ),
         PaymentMethod.INSTANT_PAYMENT,
     ),
     (
@@ -234,12 +246,16 @@ _METHOD_RULES: tuple[tuple[re.Pattern[str], PaymentMethod], ...] = (
     ),
     (_rule(r"\bcheque\b|\bcheq\b|\bchq\b"), PaymentMethod.CHEQUE),
     (
-        _rule(r"\b(?:service\s*fee|monthly\s*fee|account\s*fee|admin\s*fee|bank\s*charge|card\s*fee|fees?)\b"),
+        _rule(
+            r"\b(?:service\s*fee|monthly\s*fee|account\s*fee|admin\s*fee|bank\s*charge|card\s*fee|fees?)\b"
+        ),
         PaymentMethod.BANK_FEE,
     ),
     (_rule(r"\b(?:interest|rente)\b"), PaymentMethod.INTEREST),
     (
-        _rule(r"\b(?:eft|electronic\s*(?:funds\s*)?transfer|ib\s*pay(?:ment)?|internet\s*bank(?:ing)?|payment\s*(?:to|from)|betaling)\b"),
+        _rule(
+            r"\b(?:eft|electronic\s*(?:funds\s*)?transfer|ib\s*pay(?:ment)?|internet\s*bank(?:ing)?|payment\s*(?:to|from)|betaling)\b"
+        ),
         PaymentMethod.EFT_OUT,
     ),
 )
@@ -269,76 +285,104 @@ _PURPOSE_RULES: tuple[tuple[re.Pattern[str], SpendingPurpose, Decimal], ...] = (
         CONFIDENCE_PHRASE,
     ),
     (
-        _rule(r"\b(?:municipal(?:ity)?|rates\s*(?:and|&)\s*taxes|city\s*of\s+\w+|joburg|tshwane|ekurhuleni|ethekwini|mangaung|nelson\s*mandela\s*bay|sars|traffic\s*fine)\b"),
+        _rule(
+            r"\b(?:municipal(?:ity)?|rates\s*(?:and|&)\s*taxes|city\s*of\s+\w+|joburg|tshwane|ekurhuleni|ethekwini|mangaung|nelson\s*mandela\s*bay|sars|traffic\s*fine)\b"
+        ),
         SpendingPurpose.RATES_AND_TAXES,
         CONFIDENCE_PHRASE,
     ),
     (
-        _rule(r"\b(?:eskom|electricity|prepaid\s*elec|water\s*(?:and|&)\s*sanitation|refuse|sewerage|utilit(?:y|ies)|gas\b)\b"),
+        _rule(
+            r"\b(?:eskom|electricity|prepaid\s*elec|water\s*(?:and|&)\s*sanitation|refuse|sewerage|utilit(?:y|ies)|gas\b)\b"
+        ),
         SpendingPurpose.UTILITIES,
         CONFIDENCE_PHRASE,
     ),
     # Debt, before the merchants that also lend. "capitec loan" is debt service; "capitec"
     # alone is just the bank the account is at.
     (
-        _rule(r"\b(?:wesbank|mfc\b|motor\s*finance|vehicle\s*finance|toyota\s*financial|vw\s*financial|bmw\s*financial|ford\s*credit|instal?ment\s*sale)\b"),
+        _rule(
+            r"\b(?:wesbank|mfc\b|motor\s*finance|vehicle\s*finance|toyota\s*financial|vw\s*financial|bmw\s*financial|ford\s*credit|instal?ment\s*sale)\b"
+        ),
         SpendingPurpose.VEHICLE_INSTALMENT,
         CONFIDENCE_PHRASE,
     ),
     (
-        _rule(r"\b(?:loan\s*(?:repay(?:ment)?|instal?ment|pay(?:ment)?)|personal\s*loan|credit\s*card\s*pay(?:ment)?|card\s*repay|african\s*bank|bayport|direct\s*axis|finchoice|wonga|store\s*card|account\s*pay(?:ment)?\s*(?:edgars|truworths|foschini))\b"),
+        _rule(
+            r"\b(?:loan\s*(?:repay(?:ment)?|instal?ment|pay(?:ment)?)|personal\s*loan|credit\s*card\s*pay(?:ment)?|card\s*repay|african\s*bank|bayport|direct\s*axis|finchoice|wonga|store\s*card|account\s*pay(?:ment)?\s*(?:edgars|truworths|foschini))\b"
+        ),
         SpendingPurpose.DEBT_REPAYMENT,
         CONFIDENCE_PHRASE,
     ),
     # Insurance and medical, before retail: "dis-chem" is medical, "discovery insure" is
     # insurance, and both would otherwise be swept up by a generic merchant rule.
     (
-        _rule(r"\b(?:insur(?:e|ance)|assurance|outsurance|santam|hollard|miway|king\s*price|naked\s*insur|budget\s*insur|old\s*mutual|sanlam|liberty|funeral\s*(?:cover|plan|policy)|life\s*cover|short\s*term\s*insur)\b"),
+        _rule(
+            r"\b(?:insur(?:e|ance)|assurance|outsurance|santam|hollard|miway|king\s*price|naked\s*insur|budget\s*insur|old\s*mutual|sanlam|liberty|funeral\s*(?:cover|plan|policy)|life\s*cover|short\s*term\s*insur)\b"
+        ),
         SpendingPurpose.INSURANCE,
         CONFIDENCE_PHRASE,
     ),
     (
-        _rule(r"\b(?:medical\s*aid|discovery\s*health|momentum\s*health|bonitas|medshield|gems\b|fedhealth|bestmed|pharmacy|dis[\s-]*chem|clicks|netcare|mediclinic|life\s*health|hospital|doctor|dentist|optometrist|radiolog|patholog)\b"),
+        _rule(
+            r"\b(?:medical\s*aid|discovery\s*health|momentum\s*health|bonitas|medshield|gems\b|fedhealth|bestmed|pharmacy|dis[\s-]*chem|clicks|netcare|mediclinic|life\s*health|hospital|doctor|dentist|optometrist|radiolog|patholog)\b"
+        ),
         SpendingPurpose.MEDICAL,
         CONFIDENCE_PHRASE,
     ),
     (
-        _rule(r"\b(?:vodacom|mtn\b|cell\s*c|telkom|rain\b|afrihost|webafrica|mweb|cool\s*ideas|vumatel|openserve|fibre|airtime|data\s*bundle|prepaid\s*airtime)\b"),
+        _rule(
+            r"\b(?:vodacom|mtn\b|cell\s*c|telkom|rain\b|afrihost|webafrica|mweb|cool\s*ideas|vumatel|openserve|fibre|airtime|data\s*bundle|prepaid\s*airtime)\b"
+        ),
         SpendingPurpose.TELECOMS,
         CONFIDENCE_MERCHANT,
     ),
     (
-        _rule(r"\b(?:netflix|spotify|showmax|dstv|multichoice|apple\.com|itunes|icloud|google\s*(?:play|storage|one)|microsoft|office\s*365|prime\s*video|amazon\s*prime|youtube|audible|canva|adobe|subscription|membership|gym|virgin\s*active|planet\s*fitness)\b"),
+        _rule(
+            r"\b(?:netflix|spotify|showmax|dstv|multichoice|apple\.com|itunes|icloud|google\s*(?:play|storage|one)|microsoft|office\s*365|prime\s*video|amazon\s*prime|youtube|audible|canva|adobe|subscription|membership|gym|virgin\s*active|planet\s*fitness)\b"
+        ),
         SpendingPurpose.SUBSCRIPTIONS,
         CONFIDENCE_MERCHANT,
     ),
     (
-        _rule(r"\b(?:checkers|shoprite|pick\s*n\s*pay|pnp\b|woolworths|woolies|spar\b|food\s*lover|fruit\s*(?:and|&)\s*veg|makro|usave|boxer|cambridge\s*food|grocer(?:y|ies)|supermarket)\b"),
+        _rule(
+            r"\b(?:checkers|shoprite|pick\s*n\s*pay|pnp\b|woolworths|woolies|spar\b|food\s*lover|fruit\s*(?:and|&)\s*veg|makro|usave|boxer|cambridge\s*food|grocer(?:y|ies)|supermarket)\b"
+        ),
         SpendingPurpose.GROCERIES,
         CONFIDENCE_MERCHANT,
     ),
     (
-        _rule(r"\b(?:engen|sasol|caltex|astron|total\s*(?:garage|energies)?|shell|bp\b|puma\s*energy|petrol|diesel|fuel|garage|forecourt)\b"),
+        _rule(
+            r"\b(?:engen|sasol|caltex|astron|total\s*(?:garage|energies)?|shell|bp\b|puma\s*energy|petrol|diesel|fuel|garage|forecourt)\b"
+        ),
         SpendingPurpose.FUEL,
         CONFIDENCE_MERCHANT,
     ),
     (
-        _rule(r"\b(?:uber(?!\s*eats)|bolt\b|gautrain|metrorail|taxi|e[\s-]*toll|sanral|parking|licen[cs]e\s*(?:disc|renewal)|putco|intercape|greyhound)\b"),
+        _rule(
+            r"\b(?:uber(?!\s*eats)|bolt\b|gautrain|metrorail|taxi|e[\s-]*toll|sanral|parking|licen[cs]e\s*(?:disc|renewal)|putco|intercape|greyhound)\b"
+        ),
         SpendingPurpose.TRANSPORT,
         CONFIDENCE_MERCHANT,
     ),
     (
-        _rule(r"\b(?:uber\s*eats|mr\s*d\b|nando|kfc|mcdonald|steers|wimpy|debonairs|romans\s*pizza|spur\b|ocean\s*basket|rocomamas|starbucks|vida\s*e|seattle\s*coffee|mugg\s*(?:and|&)\s*bean|restaurant|takeaway|coffee|cafe|bistro)\b"),
+        _rule(
+            r"\b(?:uber\s*eats|mr\s*d\b|nando|kfc|mcdonald|steers|wimpy|debonairs|romans\s*pizza|spur\b|ocean\s*basket|rocomamas|starbucks|vida\s*e|seattle\s*coffee|mugg\s*(?:and|&)\s*bean|restaurant|takeaway|coffee|cafe|bistro)\b"
+        ),
         SpendingPurpose.DINING,
         CONFIDENCE_MERCHANT,
     ),
     (
-        _rule(r"\b(?:ster[\s-]*kinekor|nu\s*metro|computicket|quicket|tops\b|liquor|bottle\s*store|makro\s*liquor|casino|betway|hollywoodbets|lotto|cinema|theatre)\b"),
+        _rule(
+            r"\b(?:ster[\s-]*kinekor|nu\s*metro|computicket|quicket|tops\b|liquor|bottle\s*store|makro\s*liquor|casino|betway|hollywoodbets|lotto|cinema|theatre)\b"
+        ),
         SpendingPurpose.ENTERTAINMENT,
         CONFIDENCE_MERCHANT,
     ),
     (
-        _rule(r"\b(?:truworths|mr\s*price|foschini|edgars|ackermans|pep\b|cotton\s*on|h\s*(?:and|&)\s*m|zara|sportscene|totalsports|markham|exact\b|jet\b|clothing|boutique)\b"),
+        _rule(
+            r"\b(?:truworths|mr\s*price|foschini|edgars|ackermans|pep\b|cotton\s*on|h\s*(?:and|&)\s*m|zara|sportscene|totalsports|markham|exact\b|jet\b|clothing|boutique)\b"
+        ),
         SpendingPurpose.CLOTHING,
         CONFIDENCE_MERCHANT,
     ),
@@ -348,7 +392,9 @@ _PURPOSE_RULES: tuple[tuple[re.Pattern[str], SpendingPurpose, Decimal], ...] = (
         CONFIDENCE_PHRASE,
     ),
     (
-        _rule(r"\b(?:school\s*fees?|tuition|universit(?:y|eit)|unisa|wits|stellenbosch|tvet|college|bursary|textbook|nsfas|education)\b"),
+        _rule(
+            r"\b(?:school\s*fees?|tuition|universit(?:y|eit)|unisa|wits|stellenbosch|tvet|college|bursary|textbook|nsfas|education)\b"
+        ),
         SpendingPurpose.EDUCATION,
         CONFIDENCE_PHRASE,
     ),
@@ -358,17 +404,23 @@ _PURPOSE_RULES: tuple[tuple[re.Pattern[str], SpendingPurpose, Decimal], ...] = (
         CONFIDENCE_PHRASE,
     ),
     (
-        _rule(r"\b(?:easy\s*equities|allan\s*gray|coronation|satrix|sygnia|10x\b|ninety\s*one|prescient|unit\s*trust|retirement\s*annuity|\bra\s*contribution|provident\s*fund|pension\s*fund|investment|etf\b|brokerage)\b"),
+        _rule(
+            r"\b(?:easy\s*equities|allan\s*gray|coronation|satrix|sygnia|10x\b|ninety\s*one|prescient|unit\s*trust|retirement\s*annuity|\bra\s*contribution|provident\s*fund|pension\s*fund|investment|etf\b|brokerage)\b"
+        ),
         SpendingPurpose.INVESTMENT,
         CONFIDENCE_PHRASE,
     ),
     (
-        _rule(r"\b(?:savings?\s*(?:account|transfer|deposit|pocket)?|goalsave|goal\s*save|tax\s*free\s*savings|tfsa|32\s*day|notice\s*(?:account|deposit)|emergency\s*fund|stokvel)\b"),
+        _rule(
+            r"\b(?:savings?\s*(?:account|transfer|deposit|pocket)?|goalsave|goal\s*save|tax\s*free\s*savings|tfsa|32\s*day|notice\s*(?:account|deposit)|emergency\s*fund|stokvel)\b"
+        ),
         SpendingPurpose.SAVINGS,
         CONFIDENCE_PHRASE,
     ),
     (
-        _rule(r"\b(?:service\s*fee|monthly\s*(?:account\s*)?fee|account\s*fee|admin\s*fee|bank\s*charge|card\s*fee|cash\s*(?:handling|withdrawal)\s*fee|penalty\s*fee|honouring\s*fee|unpaid\s*fee)\b"),
+        _rule(
+            r"\b(?:service\s*fee|monthly\s*(?:account\s*)?fee|account\s*fee|admin\s*fee|bank\s*charge|card\s*fee|cash\s*(?:handling|withdrawal)\s*fee|penalty\s*fee|honouring\s*fee|unpaid\s*fee)\b"
+        ),
         SpendingPurpose.BANK_CHARGES,
         CONFIDENCE_PHRASE,
     ),
@@ -378,7 +430,9 @@ _PURPOSE_RULES: tuple[tuple[re.Pattern[str], SpendingPurpose, Decimal], ...] = (
         CONFIDENCE_PHRASE,
     ),
     (
-        _rule(r"\b(?:dividend|interest\s*(?:earned|credit(?:ed)?)|rent(?:al)?\s*income|commission|bonus|refund|sassa|grant|tax\s*refund)\b"),
+        _rule(
+            r"\b(?:dividend|interest\s*(?:earned|credit(?:ed)?)|rent(?:al)?\s*income|commission|bonus|refund|sassa|grant|tax\s*refund)\b"
+        ),
         SpendingPurpose.OTHER_INCOME,
         CONFIDENCE_PHRASE,
     ),
@@ -433,13 +487,69 @@ _FUZZY_MERCHANT_TOKENS: tuple[tuple[str, SpendingPurpose], ...] = (
 # is what turns "pos purchase 1234 woolworths claremont" into "woolworths claremont".
 _MECHANICAL_TOKENS: frozenset[str] = frozenset(
     {
-        "pos", "purchase", "purch", "card", "debit", "credit", "order", "stop", "standing",
-        "atm", "autobank", "cash", "withdrawal", "deposit", "eft", "transfer", "trf", "tfr",
-        "payment", "pay", "pmt", "ref", "reference", "fee", "fees", "charge", "charges",
-        "internet", "banking", "ib", "online", "contactless", "tap", "chip", "pin", "cheque",
-        "chq", "immediate", "instant", "rtc", "payshap", "magtape", "inter", "account",
-        "acc", "to", "from", "the", "and", "of", "za", "sa", "zar", "rand", "cnp", "ecom",
-        "sbsa", "fnb", "absa", "nedbank", "capitec", "tymebank", "discovery bank",
+        "pos",
+        "purchase",
+        "purch",
+        "card",
+        "debit",
+        "credit",
+        "order",
+        "stop",
+        "standing",
+        "atm",
+        "autobank",
+        "cash",
+        "withdrawal",
+        "deposit",
+        "eft",
+        "transfer",
+        "trf",
+        "tfr",
+        "payment",
+        "pay",
+        "pmt",
+        "ref",
+        "reference",
+        "fee",
+        "fees",
+        "charge",
+        "charges",
+        "internet",
+        "banking",
+        "ib",
+        "online",
+        "contactless",
+        "tap",
+        "chip",
+        "pin",
+        "cheque",
+        "chq",
+        "immediate",
+        "instant",
+        "rtc",
+        "payshap",
+        "magtape",
+        "inter",
+        "account",
+        "acc",
+        "to",
+        "from",
+        "the",
+        "and",
+        "of",
+        "za",
+        "sa",
+        "zar",
+        "rand",
+        "cnp",
+        "ecom",
+        "sbsa",
+        "fnb",
+        "absa",
+        "nedbank",
+        "capitec",
+        "tymebank",
+        "discovery bank",
     }
 )
 

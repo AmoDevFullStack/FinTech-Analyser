@@ -148,9 +148,7 @@ def _safe_savings_rate(*, saved: Decimal, income: Decimal) -> Decimal:
 def _safe_debt_to_income(*, monthly_debt_service: Decimal, monthly_income: Decimal) -> Decimal:
     if monthly_income <= 0 or monthly_debt_service < 0:
         return Decimal("0.000000")
-    return debt_to_income(
-        monthly_debt_service=monthly_debt_service, monthly_income=monthly_income
-    )
+    return debt_to_income(monthly_debt_service=monthly_debt_service, monthly_income=monthly_income)
 
 
 def spending_impact(
