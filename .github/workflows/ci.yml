@@ -87,7 +87,7 @@ jobs:
       # sits just below the current figure so it can only ratchet up — raise it as tests land.
       - name: Domain coverage gate
         run: coverage report --include='app/domain/*' --fail-under=93
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: backend-coverage
@@ -274,7 +274,7 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           npx playwright test
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
