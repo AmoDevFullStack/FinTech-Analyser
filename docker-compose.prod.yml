@@ -1,0 +1,90 @@
+# Production/staging stack, run from published images — nothing is built on the server.
+#
+# .github/workflows/cd.yml copies this file to the host and runs:
+#
+#     docker compose -f docker-compose.prod.yml pull
+#     docker compose -f docker-compose.prod.yml up -d --wait postgres redis
+#     docker compose -f docker-compose.prod.yml run --rm migrate      # alembic upgrade head
+#     docker compose -f docker-compose.prod.yml up -d --wait --remove-orphans
+#
+# The migration is a separate, explicit step rather than a depends_on, so a failing migration
+# stops the deploy script before any new application container starts — the previous ones
+# keep serving. If it is ever skipped, /api/v1/ready returns 503 (schema behind the code)
+# and the smoke test fails the deploy.
+#
+# Secrets come from `.env` on the host (never from this file or the repository):
+#   SECRET_KEY, JWT_SECRET_KEY, POSTGRES_PASSWORD, OPENAI_API_KEY (optional)
+
+x-backend: &backend
+  image: ${IMAGE_REGISTRY:-ghcr.io/amodevfullstack/fintech-analyser}/backend:${IMAGE_TAG:?set IMAGE_TAG to the commit SHA being deployed}
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    FLASK_ENV: production
+    DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-fdt}:${POSTGRES_PASSWORD:?}@postgres:5432/${POSTGRES_DB:-fdt}
+    REDIS_URL: redis://redis:6379/0
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fdt}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: ${POSTGRES_DB:-fdt}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fdt}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    <<: *backend
+    profiles: ["tools"]
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+    healthcheck:
+      disable: true
+
+  backend:
+    <<: *backend
+
+  worker:
+    <<: *backend
+    command: ["rq", "worker", "--url", "redis://redis:6379/0"]
+    healthcheck:
+      disable: true
+
+  web:
+    image: ${IMAGE_REGISTRY:-ghcr.io/amodevfullstack/fintech-analyser}/frontend:${IMAGE_TAG:?}
+    restart: unless-stopped
+    ports:
+      # Put TLS in front of this (a host Nginx/Caddy, or a cloud load balancer). The app
+      # sets Secure session cookies outside development, so plain HTTP logins will not stick.
+      - "${WEB_PORT:-8080}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
