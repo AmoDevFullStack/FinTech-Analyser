@@ -48,7 +48,6 @@ def test_model_output_is_confined_to_the_assistant_transcript_tables() -> None:
     assert NARRATION_TABLES.isdisjoint(FINANCIAL_TABLES)
 
 
-
 def test_the_assistant_service_writes_only_to_narration_tables() -> None:
     """The service's own writes, read off its source rather than guessed at.
 

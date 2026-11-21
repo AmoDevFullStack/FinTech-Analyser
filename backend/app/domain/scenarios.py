@@ -77,9 +77,7 @@ class VehiclePurchaseAssumptions(ScenarioAssumptions):
         if self.purchase_price <= 0:
             raise ValueError(f"purchase_price must be positive, got {self.purchase_price}")
         if self.financed_principal <= 0:
-            raise ValueError(
-                "Deposit and trade-in together must be less than the purchase price."
-            )
+            raise ValueError("Deposit and trade-in together must be less than the purchase price.")
         if self.term_months < 1:
             raise ValueError(f"term_months must be >= 1, got {self.term_months}")
 
@@ -145,9 +143,7 @@ class PropertyPurchaseAssumptions(ScenarioAssumptions):
         if self.term_months < 1:
             raise ValueError(f"term_months must be >= 1, got {self.term_months}")
         if self.current_rent_monthly < 0:
-            raise ValueError(
-                f"current_rent_monthly must be >= 0, got {self.current_rent_monthly}"
-            )
+            raise ValueError(f"current_rent_monthly must be >= 0, got {self.current_rent_monthly}")
 
     def as_dict(self) -> dict[str, str]:
         return {

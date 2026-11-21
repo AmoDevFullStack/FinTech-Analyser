@@ -109,9 +109,7 @@ def add_contribution(goal_id):
         user_id=g.user_id,
         amount=Decimal(str(body["amount"])),
         occurred_on=(
-            date.fromisoformat(body["occurred_on"])
-            if body.get("occurred_on")
-            else date.today()
+            date.fromisoformat(body["occurred_on"]) if body.get("occurred_on") else date.today()
         ),
         note=body.get("note"),
     )

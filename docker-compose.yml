@@ -27,7 +27,9 @@ services:
     # (redis:6379). A conflicting local Redis on the host must not block this stack.
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      target: dev
     env_file: .env
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://fdt:fdt@postgres:5432/fdt}
@@ -43,7 +45,9 @@ services:
       - ./backend:/app
 
   worker:
-    build: ./backend
+    build:
+      context: ./backend
+      target: dev
     command: ["rq", "worker", "--url", "redis://redis:6379/0"]
     env_file: .env
     environment:
@@ -58,7 +62,9 @@ services:
       - ./backend:/app
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      target: dev
     env_file: .env
     environment:
       # Overrides vite.config.ts's host-machine default (localhost:8000) — inside this
@@ -80,6 +86,22 @@ services:
       - "80:80"
     depends_on:
       - backend
+      - frontend
+
+  # README: `docker compose run --rm playwright npx playwright test`. Not started by
+  # `docker compose up` (profile). The image tag must match @playwright/test in
+  # frontend/package-lock.json, or the bundled browsers will not match the test runner.
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.63.0-noble
+    profiles: ["e2e"]
+    working_dir: /app
+    environment:
+      E2E_BASE_URL: http://frontend:5173
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: ["sh", "-c", "npm ci --no-audit --no-fund && npx playwright test"]
+    depends_on:
       - frontend
 
 volumes:

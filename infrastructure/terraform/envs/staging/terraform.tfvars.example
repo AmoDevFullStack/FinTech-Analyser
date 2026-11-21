@@ -1,0 +1,3 @@
+# Copy to terraform.tfvars (gitignored).
+app_domain      = "staging.example.com"
+route53_zone_id = "" # optional: a Route 53 hosted zone ID to create the A record in

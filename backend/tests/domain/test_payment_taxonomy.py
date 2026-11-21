@@ -57,7 +57,7 @@ def test_an_eft_inflow_and_outflow_are_told_apart_by_sign() -> None:
 
 
 def test_a_salary_word_on_an_outflow_is_not_a_salary_deposit() -> None:
-    """"SALARY TRANSFER TO SAVINGS" is the user moving their salary, not receiving it.
+    """ "SALARY TRANSFER TO SAVINGS" is the user moving their salary, not receiving it.
 
     Reading it as a deposit would add it to income a second time, which is precisely how a
     savings rate ends up above 100%.

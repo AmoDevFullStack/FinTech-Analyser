@@ -353,9 +353,7 @@ class TransactionRepository:
             "max_amount": max_amount,
             "direction": direction.value if direction is not None else None,
             "payment_method": payment_method.value if payment_method is not None else None,
-            "spending_purpose": (
-                spending_purpose.value if spending_purpose is not None else None
-            ),
+            "spending_purpose": (spending_purpose.value if spending_purpose is not None else None),
             "is_recurring": is_recurring,
             "uncategorised_only": uncategorised_only,
             # The text predicate is deliberately not applied for a fuzzy search: a row
@@ -364,9 +362,7 @@ class TransactionRepository:
             "q": None if wants_fuzzy or not q else f"%{q}%",
             "limit": FUZZY_SCAN_LIMIT if wants_fuzzy else limit,
         }
-        rows = list(
-            self._session.scalars(select(Transaction).from_statement(_SEARCH), params)
-        )
+        rows = list(self._session.scalars(select(Transaction).from_statement(_SEARCH), params))
 
         if not wants_fuzzy:
             basis = "exact" if q else "filter"
@@ -377,16 +373,13 @@ class TransactionRepository:
         by_id = {str(row.id): row for row in rows}
         candidates = {
             str(row.id): " ".join(
-                part
-                for part in (row.normalised_description, row.merchant, row.description)
-                if part
+                part for part in (row.normalised_description, row.merchant, row.description) if part
             )
             for row in rows
         }
         ranked = rank_matches(query=q, candidates=candidates, threshold=min_score)
         return [
-            TransactionMatch(by_id[match.key], match.score, match.basis)
-            for match in ranked[:limit]
+            TransactionMatch(by_id[match.key], match.score, match.basis) for match in ranked[:limit]
         ]
 
     def get_for_user(self, transaction_id: UUID, *, user_id: UUID) -> Transaction | None:

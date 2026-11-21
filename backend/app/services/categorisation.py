@@ -155,9 +155,7 @@ class CategorisationService:
 
         exact = corrections.get(normalised_description)
         if exact is not None and exact in by_id:
-            return CategorySuggestion(
-                by_id[exact], CONFIDENCE_EXACT_CORRECTION, "correction_exact"
-            )
+            return CategorySuggestion(by_id[exact], CONFIDENCE_EXACT_CORRECTION, "correction_exact")
 
         best_id: UUID | None = None
         best_score = Decimal("0")
@@ -182,9 +180,7 @@ class CategorisationService:
             if purpose_match is not None:
                 return purpose_match
 
-        fallback = next(
-            (c for c in categories if c.kind is CategoryKind.DISCRETIONARY), None
-        )
+        fallback = next((c for c in categories if c.kind is CategoryKind.DISCRETIONARY), None)
         if fallback is None:
             return CategorySuggestion(None, Decimal("0"), "none")
         return CategorySuggestion(fallback, CONFIDENCE_DEFAULT, "default")
@@ -222,9 +218,7 @@ class CategorisationService:
             return None
         # A kind-only match is a weaker claim than a name match, and the stored confidence
         # has to say so or a reviewer cannot tell the two apart.
-        return CategorySuggestion(
-            by_kind, classification.purpose_confidence / 2, "purpose"
-        )
+        return CategorySuggestion(by_kind, classification.purpose_confidence / 2, "purpose")
 
     def recategorise_uncorrected(self, *, user_id: UUID) -> int:
         """Re-run categorisation over rows the user has not corrected.

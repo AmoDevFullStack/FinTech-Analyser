@@ -41,7 +41,9 @@ def create_scenario():
     snapshot = PositionSnapshotRepository(db.session).get_for_user(
         scenario.snapshot_id, user_id=g.user_id
     )
-    return jsonify(scenario_dict(scenario, snapshot_captured_at=snapshot.captured_at.isoformat())), 201
+    return jsonify(
+        scenario_dict(scenario, snapshot_captured_at=snapshot.captured_at.isoformat())
+    ), 201
 
 
 @bp.get("")
@@ -94,9 +96,7 @@ def get_scenario(scenario_id):
     return (
         jsonify(
             {
-                **scenario_dict(
-                    scenario, snapshot_captured_at=snapshot.captured_at.isoformat()
-                ),
+                **scenario_dict(scenario, snapshot_captured_at=snapshot.captured_at.isoformat()),
                 "snapshot_age_days": service.snapshot_age_days(scenario, user_id=g.user_id),
                 "needs_rebaseline": service.needs_rebaseline(scenario, user_id=g.user_id),
                 "assumptions": {

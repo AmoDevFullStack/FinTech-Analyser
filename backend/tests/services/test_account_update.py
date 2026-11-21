@@ -4,6 +4,8 @@ never overwritten by a manual entry.
 
 from decimal import Decimal
 
+import pytest
+
 from app.core.auth import hash_password
 from app.core.errors import ValidationError
 from app.models.account import Account, AccountType, BalanceSource
@@ -11,8 +13,6 @@ from app.models.user import User
 from app.repositories.health_assessment import HealthAssessmentRepository
 from app.repositories.position_snapshot import PositionSnapshotRepository
 from app.services.account import AccountService, CreateAccountInput, UpdateAccountInput
-
-import pytest
 
 
 def _make_user(session, email: str = "update-test@example.com") -> User:
@@ -43,7 +43,9 @@ def test_update_changes_editable_fields(session):
     updated = service.update(
         account.id,
         user_id=user.id,
-        data=UpdateAccountInput(name="Renamed", institution="New Bank", interest_rate=Decimal("0.05")),
+        data=UpdateAccountInput(
+            name="Renamed", institution="New Bank", interest_rate=Decimal("0.05")
+        ),
     )
 
     assert updated.name == "Renamed"
@@ -70,7 +72,9 @@ def test_update_balance_on_derived_account_is_rejected(session):
     service = AccountService(session)
 
     with pytest.raises(ValidationError):
-        service.update(account.id, user_id=user.id, data=UpdateAccountInput(manual_balance=Decimal("250.00")))
+        service.update(
+            account.id, user_id=user.id, data=UpdateAccountInput(manual_balance=Decimal("250.00"))
+        )
 
 
 def test_create_account_captures_a_fresh_position_snapshot(session):
@@ -172,7 +176,9 @@ def test_editing_credit_limit_recomputes_the_health_assessment(session):
     service = AccountService(session)
     before = HealthAssessmentRepository(session).latest_for_user(user_id=user.id)
 
-    service.update(account.id, user_id=user.id, data=UpdateAccountInput(credit_limit=Decimal("10000.00")))
+    service.update(
+        account.id, user_id=user.id, data=UpdateAccountInput(credit_limit=Decimal("10000.00"))
+    )
 
     after = HealthAssessmentRepository(session).latest_for_user(user_id=user.id)
     assert after is not None

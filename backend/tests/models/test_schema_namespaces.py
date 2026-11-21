@@ -63,14 +63,10 @@ def test_no_table_sits_in_the_enum_schema():
     assert in_shared == []
 
 
-@pytest.mark.parametrize(
-    "path", sorted(REPOSITORY_DIR.glob("*.py")), ids=lambda path: path.name
-)
+@pytest.mark.parametrize("path", sorted(REPOSITORY_DIR.glob("*.py")), ids=lambda path: path.name)
 def test_raw_sql_names_tables_with_their_schema(path):
     source = path.read_text(encoding="utf-8")
-    unqualified = [
-        f"{keyword} {table}" for keyword, table in UNQUALIFIED_SQL.findall(source)
-    ]
+    unqualified = [f"{keyword} {table}" for keyword, table in UNQUALIFIED_SQL.findall(source)]
     assert unqualified == [], (
         f"{path.name} refers to {unqualified} without a schema. Write the schema out "
         f"(`FROM ledger.transactions`) — search_path is not the same in psql, in the "
@@ -78,9 +74,7 @@ def test_raw_sql_names_tables_with_their_schema(path):
     )
 
 
-@pytest.mark.parametrize(
-    "path", sorted(REPOSITORY_DIR.glob("*.py")), ids=lambda path: path.name
-)
+@pytest.mark.parametrize("path", sorted(REPOSITORY_DIR.glob("*.py")), ids=lambda path: path.name)
 def test_raw_sql_names_enum_types_with_their_schema(path):
     source = path.read_text(encoding="utf-8")
     unqualified = UNQUALIFIED_ENUM_CAST.findall(source)

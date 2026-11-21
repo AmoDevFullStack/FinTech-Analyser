@@ -6,7 +6,8 @@ from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import Date, ForeignKey, Numeric, String
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.payment_taxonomy import PaymentMethod, SpendingPurpose
@@ -71,9 +72,7 @@ class StagedTransaction(UUIDPrimaryKeyMixin, Base):
     # Detection runs at staging, not at commit, so the impact preview the user approves is
     # computed from the same classification the committed rows will carry. Classifying
     # twice would let the preview and the result disagree.
-    payment_method: Mapped[PaymentMethod | None] = mapped_column(
-        PAYMENT_METHOD_ENUM, nullable=True
-    )
+    payment_method: Mapped[PaymentMethod | None] = mapped_column(PAYMENT_METHOD_ENUM, nullable=True)
     spending_purpose: Mapped[SpendingPurpose | None] = mapped_column(
         SPENDING_PURPOSE_ENUM, nullable=True
     )

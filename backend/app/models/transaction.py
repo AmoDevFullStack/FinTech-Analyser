@@ -55,9 +55,7 @@ class Transaction(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # statement line itself said. Keeping both means a later change to the rule table can
     # be re-run over history without destroying a user's corrections, and a user's
     # correction never rewrites the evidence it was made against.
-    payment_method: Mapped[PaymentMethod | None] = mapped_column(
-        PAYMENT_METHOD_ENUM, nullable=True
-    )
+    payment_method: Mapped[PaymentMethod | None] = mapped_column(PAYMENT_METHOD_ENUM, nullable=True)
     spending_purpose: Mapped[SpendingPurpose | None] = mapped_column(
         SPENDING_PURPOSE_ENUM, nullable=True
     )

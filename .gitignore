@@ -25,3 +25,18 @@ coverage/
 # Python environments
 .venv/
 venv/
+
+# Test and coverage output
+.coverage
+coverage.xml
+htmlcov/
+playwright-report/
+test-results/
+
+# Terraform: local state, plugin caches, and per-person inputs. Commit .terraform.lock.hcl.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+terraform.tfvars
+infrastructure/terraform/backend.hcl

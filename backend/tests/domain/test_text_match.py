@@ -8,7 +8,8 @@ function is right.
 from decimal import Decimal
 
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 from app.domain.text_match import (
     TOKEN_MATCH_THRESHOLD,
@@ -123,16 +124,12 @@ def test_two_different_merchants_sharing_nothing_score_zero() -> None:
 
 def test_token_order_is_ignored() -> None:
     """Two exports of the same statement can order the same three tokens differently."""
-    assert description_similarity(
-        "capitec eft nadia", "nadia capitec eft"
-    ) == Decimal("1.000000")
+    assert description_similarity("capitec eft nadia", "nadia capitec eft") == Decimal("1.000000")
 
 
 def test_a_misspelled_merchant_still_matches() -> None:
     """The case the search box exists for: a user who cannot spell what their bank prints."""
-    assert description_similarity("woolwrths claremnt", "woolworths claremont") >= Decimal(
-        "0.85"
-    )
+    assert description_similarity("woolwrths claremnt", "woolworths claremont") >= Decimal("0.85")
 
 
 def test_a_description_with_no_letters_or_digits_scores_zero() -> None:
@@ -180,7 +177,7 @@ def test_candidates_below_the_threshold_are_dropped() -> None:
 
 
 def test_an_empty_query_matches_nothing() -> None:
-    """"Results for no search term" is the unfiltered list, which is the caller's other
+    """ "Results for no search term" is the unfiltered list, which is the caller's other
     code path — not every row at score 1."""
     assert rank_matches(query="   ", candidates={"a": "anything"}, threshold=Decimal("0.6")) == []
 

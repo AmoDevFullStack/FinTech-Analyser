@@ -37,8 +37,8 @@ from app.models.account import Account, AccountType
 from app.models.health_assessment import HealthAssessment
 from app.repositories.account import AccountRepository
 from app.repositories.debt import DebtRepository
-from app.repositories.transaction import TransactionRepository
 from app.repositories.health_assessment import HealthAssessmentRepository
+from app.repositories.transaction import TransactionRepository
 from app.services.monthly_summary import MonthlySummaryService
 
 TRAILING_MONTHS = 6
@@ -313,7 +313,9 @@ class FinancialHealthService:
     ) -> Decimal:
         if monthly_income <= 0:
             return Decimal("0")
-        return debt_to_income(monthly_debt_service=monthly_debt_service, monthly_income=monthly_income)
+        return debt_to_income(
+            monthly_debt_service=monthly_debt_service, monthly_income=monthly_income
+        )
 
     def _savings_rate(self, saved: Decimal, income: Decimal) -> Decimal:
         if income <= 0:
@@ -329,4 +331,3 @@ class FinancialHealthService:
             (max(Decimal("0"), -a.current_balance) for a in credit_accounts), Decimal("0")
         )
         return credit_utilisation(balance_owed=total_owed, credit_limit=total_limit)
-

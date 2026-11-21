@@ -56,8 +56,7 @@ def build_narration_payload(*, question: str, figures: list[dict]) -> NarrationP
     internal reference never leaves the system either.
     """
     whitelisted = tuple(
-        {key: str(figure[key]) for key in FIGURE_PROMPT_KEYS if key in figure}
-        for figure in figures
+        {key: str(figure[key]) for key in FIGURE_PROMPT_KEYS if key in figure} for figure in figures
     )
     return NarrationPayload(question=question, figures=whitelisted)
 

@@ -1,0 +1,12 @@
+# Shared by `make fix`, `make lint` and CI. Line length 100 matches how the codebase was
+# already written: it is the setting under which the fewest existing lines move.
+target-version = "py312"
+line-length = 100
+extend-exclude = ["migrations/versions"]
+
+[lint]
+# Ruff's defaults (pyflakes + the error subset of pycodestyle) plus import sorting.
+extend-select = ["I"]
+
+[lint.isort]
+known-first-party = ["app"]

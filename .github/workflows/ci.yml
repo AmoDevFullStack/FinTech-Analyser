@@ -1,12 +1,54 @@
 name: CI
 
+# Every pull request and every push to main. A green run on main is what cd.yml waits for
+# before it builds and deploys images, so nothing reaches staging without passing this.
+
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # A new push to the same PR cancels the stale run; runs on main always finish, because
+  # cd.yml keys off their result.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
 
 jobs:
-  backend:
+  backend-lint:
+    name: Backend · lint and types
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      - name: No float() in app/domain (ADR-001)
+        run: |
+          if grep -rn "float(" app/domain; then
+            echo "::error::float() found in app/domain — money is Decimal, see ADR-001"
+            exit 1
+          fi
+      - run: ruff check app tests migrations
+      - run: ruff format --check app tests migrations
+      - run: mypy app --ignore-missing-imports
+
+  backend-test:
+    name: Backend · tests
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -36,19 +78,61 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
       - run: pip install -r requirements-dev.txt
-      - name: No-float check on app/domain
-        run: |
-          if grep -rn "float(" app/domain; then
-            echo "float() found in app/domain — see the domain-engine conventions"
-            exit 1
-          fi
-      - run: ruff check app tests
-      - run: mypy app --ignore-missing-imports
-      - run: pytest --cov=app
+      - run: pytest --cov=app --cov-report=xml --cov-report=term
+      # PLAN.md's quality gate is 95% on the engines; the suite is at 94% today. The gate
+      # sits just below the current figure so it can only ratchet up — raise it as tests land.
+      - name: Domain coverage gate
+        run: coverage report --include='app/domain/*' --fail-under=93
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: backend/coverage.xml
+          retention-days: 14
+
+  migrations:
+    name: Backend · migrations round-trip
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: fdt
+          POSTGRES_PASSWORD: fdt
+          POSTGRES_DB: fdt_migrations
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U fdt"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SECRET_KEY: ci-secret
+      DATABASE_URL: postgresql+psycopg://fdt:fdt@localhost:5432/fdt_migrations
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r requirements.txt
+      # The test suite builds tables with create_all and never runs a migration, so this job
+      # is the only thing proving that the path production takes — alembic — works, and that
+      # every downgrade does too (a rollback that fails is worse than none).
+      - run: alembic upgrade head
+      - run: alembic downgrade base
+      - run: alembic upgrade head
 
   frontend:
+    name: Frontend · lint, types, tests, build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -57,8 +141,146 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-      - run: npm ci
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test -- --run
+      - run: npm run build
+
+  scripts:
+    name: Deploy tooling · tests and types
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scripts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: scripts/requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check . && ruff format --check .
+      - run: mypy --strict aws_deploy.py smoke_test.py && mypy tests
+      # aws_deploy.py against moto's in-memory AWS: S3 upload, RDS snapshot + pruning, SSM.
+      - run: pytest -q
+      - run: shellcheck remote-deploy.sh
+
+  infra:
+    name: Terraform · format and validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infrastructure/terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.13"
+      - run: terraform fmt -recursive -check -diff
+      # -backend=false: validates every stack without AWS credentials or state access.
+      - name: Validate every stack
+        run: |
+          for stack in bootstrap global envs/staging envs/production; do
+            echo "::group::$stack"
+            terraform -chdir="$stack" init -backend=false -input=false
+            terraform -chdir="$stack" validate
+            echo "::endgroup::"
+          done
+
+  docker:
+    name: Docker · production images build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      # Build only — cd.yml publishes. Catches a broken Dockerfile on the PR that breaks it,
+      # not on the deploy after it merges.
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.image }}
+          target: prod
+          push: false
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  e2e:
+    name: E2E · Playwright
+    needs: [backend-test, frontend]
+    runs-on: ubuntu-latest
+    # The spec has never run green anywhere. Report, don't block, until it has; then delete
+    # this line so a broken user journey fails the pipeline like any other test.
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: fdt
+          POSTGRES_PASSWORD: fdt
+          POSTGRES_DB: fdt_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U fdt"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    env:
+      # development, not production: the app marks session cookies Secure everywhere else,
+      # and this stack is plain HTTP on localhost.
+      FLASK_ENV: development
+      SECRET_KEY: ci-secret
+      DATABASE_URL: postgresql+psycopg://fdt:fdt@localhost:5432/fdt_e2e
+      REDIS_URL: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Start backend
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          alembic upgrade head
+          flask --app wsgi seed demo
+          nohup gunicorn --bind 127.0.0.1:8000 --workers 2 wsgi:app > ../gunicorn.log 2>&1 &
+          python ../scripts/smoke_test.py http://127.0.0.1:8000 --skip-frontend --timeout 60
+      - name: Start frontend
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          # `vite preview` reuses server.proxy from vite.config.ts, so /api reaches gunicorn.
+          nohup npx vite preview --port 5173 --strictPort > ../vite.log 2>&1 &
+          curl -sf --retry 30 --retry-delay 2 --retry-connrefused http://127.0.0.1:5173 > /dev/null
+      - name: Run Playwright
+        working-directory: frontend
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+            gunicorn.log
+            vite.log
+          retention-days: 7

@@ -1,0 +1,84 @@
+name: Deploy (reusable)
+
+# Called by cd.yml for both environments: one definition, so staging rehearses exactly what
+# production will run. All AWS access is through the environment's OIDC deploy role — no AWS
+# keys are stored in GitHub. See docs/deployment.md for setup.
+#
+# Per GitHub environment (Settings → Environments → staging / production):
+#   variables  AWS_DEPLOY_ROLE_ARN   terraform output deploy_role_arn
+#              APP_URL               terraform output app_url (https://..., no trailing slash)
+# Repository variable:
+#              AWS_REGION            e.g. af-south-1
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: staging or production
+        required: true
+        type: string
+      image_tag:
+        description: Full commit SHA whose images to deploy
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.image_tag }} to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ vars.APP_URL }}
+    concurrency:
+      # Never two deploys to one environment at once; queue rather than cancel, because
+      # cancelling halfway through a migration is the worst place to stop.
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    env:
+      IMAGE_TAG: ${{ inputs.image_tag }}
+      TARGET_ENV: ${{ inputs.environment }}
+      APP_URL: ${{ vars.APP_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.image_tag }}
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: deploy-${{ inputs.environment }}-${{ github.run_id }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements.txt
+      - run: pip install -r scripts/requirements.txt
+
+      # Uploads release files, snapshots RDS, then runs remote-deploy.sh on the host via SSM
+      # (render .env from Parameter Store, pull from ECR, migrate, roll containers).
+      - name: Deploy
+        run: python scripts/aws_deploy.py deploy --environment "$TARGET_ENV" --image-tag "$IMAGE_TAG"
+
+      - name: Smoke test
+        run: python3 scripts/smoke_test.py "$APP_URL" --expect-commit "$IMAGE_TAG" --timeout 180
+
+      - name: Roll back on failure
+        if: failure()
+        run: |
+          python scripts/aws_deploy.py rollback --environment "$TARGET_ENV" --image-tag "$IMAGE_TAG"
+          echo "::error::Deploy of $IMAGE_TAG to $TARGET_ENV failed and the containers were rolled back. The database was not — see docs/deployment.md §4."
+
+      - name: Summary
+        if: success()
+        run: |
+          {
+            echo "### Deployed to $TARGET_ENV"
+            echo "- Commit: \`$IMAGE_TAG\`"
+            echo "- URL: $APP_URL"
+          } >> "$GITHUB_STEP_SUMMARY"

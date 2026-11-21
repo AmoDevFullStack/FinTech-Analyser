@@ -5,7 +5,8 @@ import uuid
 from datetime import datetime
 from typing import TypeVar
 
-from sqlalchemy import DateTime, Enum as SAEnum, func
+from sqlalchemy import DateTime, func
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -43,9 +44,7 @@ def pg_enum(enum_cls: type[_E], *, name: str) -> SAEnum:
 
 
 class UUIDPrimaryKeyMixin:
-    id: Mapped[uuid.UUID] = mapped_column(
-        PGUUID(as_uuid=True), primary_key=True, default=uuid7
-    )
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid7)
 
 
 class TimestampMixin:

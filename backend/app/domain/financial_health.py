@@ -119,13 +119,18 @@ class HealthAssessmentResult:
     largest_negative_contributor: str
 
 
-def _component(name: str, ratio: Decimal, bands: tuple[tuple[Decimal, Decimal], ...]) -> ComponentScore:
+def _component(
+    name: str, ratio: Decimal, bands: tuple[tuple[Decimal, Decimal], ...]
+) -> ComponentScore:
     score = _piecewise_score(ratio, bands).quantize(SCORE_PLACES, rounding=ROUND_HALF_UP)
     weight = _WEIGHTS[name]
     contribution = (score * weight).quantize(SCORE_PLACES, rounding=ROUND_HALF_UP)
     return ComponentScore(
-        name=name, ratio=ratio.quantize(RATE_PLACES, rounding=ROUND_HALF_UP),
-        score=score, weight=weight, contribution=contribution,
+        name=name,
+        ratio=ratio.quantize(RATE_PLACES, rounding=ROUND_HALF_UP),
+        score=score,
+        weight=weight,
+        contribution=contribution,
     )
 
 

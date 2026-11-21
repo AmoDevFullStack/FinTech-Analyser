@@ -1,0 +1,154 @@
+name: CD
+
+# main ──CI green──▶ build & push images to ECR (tag = commit SHA) ──▶ deploy to staging
+# tag vX.Y.Z  ─────▶ promote that commit's images (no rebuild) ──▶ deploy to production
+# manual      ─────▶ deploy any already-built SHA to either environment (this is rollback)
+#
+# Production only ever runs an image that was built from main and passed CI: promotion
+# re-tags the existing image rather than rebuilding, so what was tested is what ships.
+#
+# Nothing runs until AWS exists: set the repository variables AWS_REGION and
+# AWS_BUILD_ROLE_ARN (terraform output github_build_role_arn) — see docs/deployment.md.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy to
+        required: true
+        type: choice
+        options: [staging, production]
+      sha:
+        description: Full commit SHA to deploy (its images must already exist)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and push images
+    # Only for a successful CI run triggered by a push to main — not for PRs, which
+    # workflow_run also reports, and not for failed runs.
+    if: >-
+      vars.AWS_BUILD_ROLE_ARN != '' &&
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      sha: ${{ steps.meta.outputs.sha }}
+    strategy:
+      matrix:
+        image: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - id: meta
+        run: |
+          sha="${{ github.event.workflow_run.head_sha }}"
+          {
+            echo "sha=$sha"
+            echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "version=main-${sha:0:7}"
+          } >> "$GITHUB_OUTPUT"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_BUILD_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.image }}
+          target: prod
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/fintech-analyser/${{ matrix.image }}:${{ steps.meta.outputs.sha }}
+            ${{ steps.ecr.outputs.registry }}/fintech-analyser/${{ matrix.image }}:main
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.version }}
+            BUILD_SHA=${{ steps.meta.outputs.sha }}
+            BUILD_TIME=${{ steps.meta.outputs.built_at }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ steps.meta.outputs.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  deploy-staging:
+    needs: build
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: staging
+      image_tag: ${{ needs.build.outputs.sha }}
+    permissions:
+      contents: read
+      id-token: write
+
+  promote:
+    name: Promote ${{ github.ref_name }}
+    if: >-
+      vars.AWS_BUILD_ROLE_ARN != '' &&
+      github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      sha: ${{ github.sha }}
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_BUILD_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - name: Re-tag the tested images
+        env:
+          ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          registry="$ECR_REGISTRY/fintech-analyser"
+          for image in backend frontend; do
+            source="$registry/$image:$GITHUB_SHA"
+            # Fails if this commit was never built from main — e.g. a tag on a feature
+            # branch. That is the point: production only runs what passed CI on main.
+            if ! docker buildx imagetools inspect "$source" > /dev/null 2>&1; then
+              echo "::error::$source does not exist. Tag a commit on main after its CD build finishes."
+              exit 1
+            fi
+            docker buildx imagetools create --tag "$registry/$image:$GITHUB_REF_NAME" "$source"
+          done
+
+  deploy-production:
+    needs: promote
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: production
+      image_tag: ${{ needs.promote.outputs.sha }}
+    permissions:
+      contents: read
+      id-token: write
+
+  deploy-manual:
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: ${{ inputs.environment }}
+      image_tag: ${{ inputs.sha }}
+    permissions:
+      contents: read
+      id-token: write

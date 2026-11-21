@@ -21,4 +21,6 @@ def get_position():
 @require_auth
 def create_snapshot():
     snapshot = PositionService(db.session).capture_snapshot(user_id=g.user_id)
-    return jsonify({"snapshot_id": str(snapshot.id), "captured_at": snapshot.captured_at.isoformat()}), 201
+    return jsonify(
+        {"snapshot_id": str(snapshot.id), "captured_at": snapshot.captured_at.isoformat()}
+    ), 201

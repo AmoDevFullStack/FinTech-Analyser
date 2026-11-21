@@ -178,9 +178,7 @@ def extract_parameters(question: str, *, as_of: date | None = None) -> Extracted
         count = int(horizon_match.group(1))
         horizon_months = count * 12 if horizon_match.group(2).lower() == "year" else count
 
-    return ExtractedParameters(
-        amount=amount, month=month, year=year, horizon_months=horizon_months
-    )
+    return ExtractedParameters(amount=amount, month=month, year=year, horizon_months=horizon_months)
 
 
 def classify(question: str, *, as_of: date | None = None) -> Intent:

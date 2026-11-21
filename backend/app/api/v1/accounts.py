@@ -43,7 +43,9 @@ def create_account():
             institution=body.get("institution"),
             opening_balance=Decimal(str(body.get("opening_balance", "0"))),
             opened_on=date.fromisoformat(body["opened_on"]) if body.get("opened_on") else None,
-            interest_rate=Decimal(str(body["interest_rate"])) if body.get("interest_rate") else None,
+            interest_rate=Decimal(str(body["interest_rate"]))
+            if body.get("interest_rate")
+            else None,
             credit_limit=Decimal(str(body["credit_limit"])) if body.get("credit_limit") else None,
         ),
     )
@@ -70,7 +72,9 @@ def update_account(account_id):
             name=body.get("name"),
             institution=body.get("institution"),
             opened_on=date.fromisoformat(body["opened_on"]) if body.get("opened_on") else None,
-            interest_rate=Decimal(str(body["interest_rate"])) if body.get("interest_rate") else None,
+            interest_rate=Decimal(str(body["interest_rate"]))
+            if body.get("interest_rate")
+            else None,
             credit_limit=Decimal(str(body["credit_limit"])) if body.get("credit_limit") else None,
             manual_balance=Decimal(str(body["balance"])) if body.get("balance") else None,
         ),

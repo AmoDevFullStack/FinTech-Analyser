@@ -32,8 +32,8 @@ from decimal import ROUND_HALF_UP, Decimal
 from uuid import UUID
 
 from app.core.db import DbSession
-from app.core.events import TRANSACTIONS_RECLASSIFIED, dispatch_pending, record
 from app.core.errors import NotFoundError
+from app.core.events import TRANSACTIONS_RECLASSIFIED, dispatch_pending, record
 from app.domain.payment_taxonomy import (
     PURPOSE_KIND,
     PaymentMethod,
@@ -298,8 +298,7 @@ class SpendingInsightService:
         detected_importable = tuple(
             row
             for row, staged_row in zip(detected, staged, strict=True)
-            if not staged_row.is_exact_duplicate
-            and staged_row.resolution not in ("skip", "merge")
+            if not staged_row.is_exact_duplicate and staged_row.resolution not in ("skip", "merge")
         )
 
         added = self._flows_from_detected(detected_importable, months=months_covered)
@@ -331,9 +330,7 @@ class SpendingInsightService:
                 detected_importable, user_id=user_id, months=months_covered
             ),
             impact=impact,
-            affected=self._affected(
-                account_id=account_id, impact=impact, is_preview=is_preview
-            ),
+            affected=self._affected(account_id=account_id, impact=impact, is_preview=is_preview),
             rows_needing_review=sum(1 for row in detected_importable if row.needs_review),
         )
 
@@ -387,8 +384,7 @@ class SpendingInsightService:
             # the low-confidence fallback. Both produce a figure that will be wrong in a way
             # that looks right, which is the failure specs/transactions.md opens by naming.
             needs_review=(
-                purpose is SpendingPurpose.UNKNOWN
-                or suggestion.basis in ("default", "none")
+                purpose is SpendingPurpose.UNKNOWN or suggestion.basis in ("default", "none")
             ),
         )
 
@@ -398,9 +394,7 @@ class SpendingInsightService:
         return CategoryKind(spend_kind.value) if spend_kind is not None else None
 
     @staticmethod
-    def _flows_from_detected(
-        rows: tuple[DetectedRow, ...], *, months: int
-    ) -> MonthlyFlows:
+    def _flows_from_detected(rows: tuple[DetectedRow, ...], *, months: int) -> MonthlyFlows:
         """Per-month averages of what these rows add, grouped by kind.
 
         Signs follow `PositionService.category_kind_sums` exactly, because the two figures
@@ -487,9 +481,7 @@ class SpendingInsightService:
         return max(total, Decimal("0"))
 
     @staticmethod
-    def _group_by_purpose(
-        rows: tuple[DetectedRow, ...], *, months: int
-    ) -> tuple[GroupTotal, ...]:
+    def _group_by_purpose(rows: tuple[DetectedRow, ...], *, months: int) -> tuple[GroupTotal, ...]:
         return _group(
             rows,
             key=lambda row: row.spending_purpose.value,
@@ -498,9 +490,7 @@ class SpendingInsightService:
         )
 
     @staticmethod
-    def _group_by_method(
-        rows: tuple[DetectedRow, ...], *, months: int
-    ) -> tuple[GroupTotal, ...]:
+    def _group_by_method(rows: tuple[DetectedRow, ...], *, months: int) -> tuple[GroupTotal, ...]:
         return _group(
             rows,
             key=lambda row: row.payment_method.value,
@@ -596,9 +586,7 @@ class SpendingInsightService:
                 AffectedArea(
                     area="risk_flags",
                     effect="turns this month's cash flow negative",
-                    detail=(
-                        f"Monthly surplus moves from {cash_flow.before} to {cash_flow.after}."
-                    ),
+                    detail=(f"Monthly surplus moves from {cash_flow.before} to {cash_flow.after}."),
                 )
             )
 
@@ -643,9 +631,7 @@ def _group(
             key=group_key,
             label=label(group[0]),
             total=_to_cents(sum((abs(r.amount) for r in group), Decimal("0"))),
-            monthly_average=_to_cents(
-                sum((abs(r.amount) for r in group), Decimal("0")) / divisor
-            ),
+            monthly_average=_to_cents(sum((abs(r.amount) for r in group), Decimal("0")) / divisor),
             count=len(group),
         )
         for group_key, group in buckets.items()

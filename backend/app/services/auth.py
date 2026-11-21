@@ -3,9 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from app.core.db import DbSession
-
 from app.core.auth import current_user_id, hash_password, log_in_user, log_out_user, verify_password
+from app.core.db import DbSession
 from app.core.errors import ConflictError, UnauthenticatedError
 from app.models.user import User
 from app.repositories.user import UserRepository

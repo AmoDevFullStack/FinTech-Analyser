@@ -57,9 +57,7 @@ class RecurrenceService:
             by_description[txn.normalised_description].append(txn)
 
         groups = {
-            description: [
-                Occurrence(occurred_on=t.occurred_on, amount=t.amount) for t in rows
-            ]
+            description: [Occurrence(occurred_on=t.occurred_on, amount=t.amount) for t in rows]
             for description, rows in by_description.items()
         }
         kinds = {c.id: c.kind for c in self._categories.list_for_user(user_id=user_id)}
@@ -95,9 +93,7 @@ class RecurrenceService:
         recurring_ids: set[UUID] = set()
         for view in self.detect(user_id=user_id):
             rows = by_description[view.series.key]
-            group_id = next(
-                (t.recurrence_group_id for t in rows if t.recurrence_group_id), uuid7()
-            )
+            group_id = next((t.recurrence_group_id for t in rows if t.recurrence_group_id), uuid7())
             for txn in rows:
                 txn.is_recurring = True
                 txn.recurrence_group_id = group_id
@@ -130,9 +126,7 @@ class RecurrenceService:
                 "due_on": due.isoformat(),
                 "source": "recurring_series",
                 "category_id": (
-                    str(by_key[series.key].category_id)
-                    if by_key[series.key].category_id
-                    else None
+                    str(by_key[series.key].category_id) if by_key[series.key].category_id else None
                 ),
             }
             for series, due in expected

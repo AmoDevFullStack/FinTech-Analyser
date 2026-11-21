@@ -37,9 +37,7 @@ class DebtRepository:
 
     def list_for_user(self, *, user_id: UUID) -> list[Debt]:
         return list(
-            self._session.scalars(
-                select(Debt).from_statement(_LIST_FOR_USER), {"user_id": user_id}
-            )
+            self._session.scalars(select(Debt).from_statement(_LIST_FOR_USER), {"user_id": user_id})
         )
 
     def get_for_user(self, debt_id: UUID, *, user_id: UUID) -> Debt | None:

@@ -105,9 +105,7 @@ def get_conflicts(batch_id):
                         "amount": str(c.amount),
                         "description": c.description,
                         "existing_transaction_id": str(c.conflict_candidate_id),
-                        "payment_method": (
-                            c.payment_method.value if c.payment_method else None
-                        ),
+                        "payment_method": (c.payment_method.value if c.payment_method else None),
                         "spending_purpose": (
                             c.spending_purpose.value if c.spending_purpose else None
                         ),

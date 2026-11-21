@@ -24,13 +24,15 @@ from uuid import UUID
 
 from pydantic import Field, StringConstraints, field_validator, model_validator
 
+from app.domain.payment_taxonomy import PaymentMethod, SpendingPurpose
 from app.models.debt import DebtType
 from app.models.transaction import Direction
-from app.domain.payment_taxonomy import PaymentMethod, SpendingPurpose
 from app.schemas.base import ApiModel
 
 NonEmptyString = Annotated[str, StringConstraints(min_length=1, max_length=500)]
-Email = Annotated[str, StringConstraints(min_length=3, max_length=320, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")]
+Email = Annotated[
+    str, StringConstraints(min_length=3, max_length=320, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+]
 
 # Long enough to resist a dictionary attack, short enough that argon2 is not hashing a
 # megabyte because someone posted a file into the field.
@@ -210,9 +212,7 @@ class ColumnMappingRequest(ApiModel):
     @model_validator(mode="after")
     def _amount_is_derivable(self):
         if self.amount_column is None and self.debit_column is None and self.credit_column is None:
-            raise ValueError(
-                "supply 'amount_column', or 'debit_column' and 'credit_column'"
-            )
+            raise ValueError("supply 'amount_column', or 'debit_column' and 'credit_column'")
         return self
 
 

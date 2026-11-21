@@ -206,9 +206,7 @@ class RiskService:
         revolving_balance = sum(
             (max(Decimal("0"), -a.current_balance) for a in credit_accounts), Decimal("0")
         )
-        credit_limit = sum(
-            (a.credit_limit or Decimal("0") for a in credit_accounts), Decimal("0")
-        )
+        credit_limit = sum((a.credit_limit or Decimal("0") for a in credit_accounts), Decimal("0"))
 
         candidates = [
             detect_cash_flow_shortfall(
@@ -358,18 +356,14 @@ class RiskService:
         - An acknowledged flag is updated like an active one but keeps its status: the
           user has seen it, and re-raising it as new would undo that.
         """
-        existing = self._flags.latest_of_type(
-            user_id=user_id, risk_type=finding.risk_type.value
-        )
+        existing = self._flags.latest_of_type(user_id=user_id, risk_type=finding.risk_type.value)
         explanation = compose_explanation(finding)
 
         if existing is not None and existing.status is RiskStatus.DISMISSED:
             dismissed_at = existing.dismissed_at
-            still_suppressed = (
-                dismissed_at is not None
-                and datetime.now(UTC) - dismissed_at
-                < timedelta(days=DISMISSAL_SUPPRESSION_DAYS)
-            )
+            still_suppressed = dismissed_at is not None and datetime.now(
+                UTC
+            ) - dismissed_at < timedelta(days=DISMISSAL_SUPPRESSION_DAYS)
             escalated = severity_rank(Severity(finding.severity.value)) > severity_rank(
                 Severity(existing.severity)
             )

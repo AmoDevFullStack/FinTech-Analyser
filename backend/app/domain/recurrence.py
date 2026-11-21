@@ -164,9 +164,7 @@ def detect_series(
     if amount_tolerance < 0:
         raise ValueError(f"amount_tolerance must be >= 0, got {amount_tolerance}")
     if interval_tolerance_days < 0:
-        raise ValueError(
-            f"interval_tolerance_days must be >= 0, got {interval_tolerance_days}"
-        )
+        raise ValueError(f"interval_tolerance_days must be >= 0, got {interval_tolerance_days}")
     if minimum_occurrences < 2:
         raise ValueError(f"minimum_occurrences must be >= 2, got {minimum_occurrences}")
 
@@ -255,9 +253,7 @@ def next_occurrence_of_day(*, as_of: date, day: int) -> date:
 
     year, month = as_of.year, as_of.month
     for _ in range(2):
-        first_of_next = (
-            date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
-        )
+        first_of_next = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
         last_day = (first_of_next - date(year, month, 1)).days
         candidate = date(year, month, min(day, last_day))
         if candidate >= as_of:

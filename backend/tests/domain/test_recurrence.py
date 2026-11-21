@@ -14,8 +14,7 @@ from app.domain.recurrence import (
 
 def _monthly(day_of_month: int, months: list[int], amount: str) -> list[Occurrence]:
     return [
-        Occurrence(occurred_on=date(2026, m, day_of_month), amount=Decimal(amount))
-        for m in months
+        Occurrence(occurred_on=date(2026, m, day_of_month), amount=Decimal(amount)) for m in months
     ]
 
 
@@ -49,8 +48,7 @@ def test_monthly_series_annualises_to_twelve_times_the_amount() -> None:
 
 def test_weekly_series_annualises_to_fifty_two_times_the_amount() -> None:
     occurrences = [
-        Occurrence(occurred_on=date(2026, 3, d), amount=Decimal("-250.00"))
-        for d in (2, 9, 16, 23)
+        Occurrence(occurred_on=date(2026, 3, d), amount=Decimal("-250.00")) for d in (2, 9, 16, 23)
     ]
     series = detect_series(key="weekly cleaner", occurrences=occurrences)
 
@@ -145,7 +143,9 @@ def test_upcoming_occurrences_lists_every_expected_date_in_the_window() -> None:
     ]
 
 
-def test_upcoming_occurrences_rolls_a_stale_series_forward_rather_than_reporting_it_overdue() -> None:
+def test_upcoming_occurrences_rolls_a_stale_series_forward_rather_than_reporting_it_overdue() -> (
+    None
+):
     monthly = detect_series(key="gym", occurrences=_monthly(3, [3, 4, 5, 6], "-900.00"))
     assert monthly is not None
 
