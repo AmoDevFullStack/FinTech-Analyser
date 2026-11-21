@@ -47,8 +47,10 @@ git clone <repo> && cd financial-digital-twin
 cp .env.example .env
 docker compose up -d
 docker compose exec backend alembic upgrade head
-docker compose exec backend python -m app.cli seed --demo
+docker compose exec backend flask --app wsgi seed demo
 ```
+
+Or with the Makefile: `make up migrate seed`. Run `make` on its own to list every target.
 
 Frontend on `http://localhost:5173`, API on `http://localhost:8000/api/v1`.
 
@@ -60,10 +62,13 @@ Running the tests:
 
 ```bash
 docker compose exec backend pytest                    # backend
-docker compose exec backend pytest app/domain -q      # engines only, fast
-docker compose run --rm frontend npm test             # frontend
-docker compose run --rm playwright npx playwright test
+docker compose exec backend pytest tests/domain -q    # engines only, fast
+docker compose run --rm frontend npm test -- --run    # frontend
+docker compose run --rm playwright                    # end to end (needs the demo seed)
 ```
+
+Before pushing, `make fix` applies formatting and lint fixes, and `make check` runs every CI
+check that does not need a database.
 
 ---
 
@@ -80,10 +85,12 @@ docker compose run --rm playwright npx playwright test
 | What should it look like, and why? | `docs/design-system.md` |
 | How does a specific feature behave? | `specs/<feature>.md` |
 | What are we building next? | `PLAN.md` |
+| How does code get from a pull request to production? | `docs/deployment.md` |
 
 Contributors should read `docs/architecture.md` and
 `docs/decisions.md` before your first change, and the relevant file in `specs/` before
-implementing a feature. The conventions for calculation code are in ADR-001 and docs/architecture.md.
+implementing a feature. The conventions for calculation code are ADR-001 and
+`docs/architecture.md` §5.
 
 ---
 
@@ -126,9 +133,12 @@ financial-digital-twin/
 ├── frontend/src/
 ├── infrastructure/
 │   ├── docker/
-│   ├── nginx/
-│   └── terraform/
-├── docker-compose.yml
+│   └── nginx/          development routing (production: frontend/nginx.conf)
+├── scripts/            smoke_test.py, remote-deploy.sh
+├── .github/            CI, CD, Dependabot
+├── docker-compose.yml       development stack
+├── docker-compose.prod.yml  staging and production, from published images
+├── Makefile
 ├── .env.example
 ├── PLAN.md
 └── README.md
@@ -148,12 +158,26 @@ scenario to real financial state), the queued 202 path for forecast refresh, and
 everything in `PLAN.md`'s "Later" section. `PLAN.md` also lists the known gaps in what
 *is* built — read that before trusting a figure in production.
 
-One caveat worth stating plainly: the database-backed test suite has never run. No
-Postgres was available in the environment this was built in, so the domain and unit
-suites (220 tests) pass while every repository and service test errors on connection.
-Run `docker compose exec backend pytest` before believing any of it works end to end.
+The full backend suite, database-backed tests included, runs against PostgreSQL 16 in CI on
+every pull request, together with a migration upgrade/downgrade round-trip. The Playwright
+journey runs in CI as well, but does not block a merge until it has passed once (the `e2e`
+job in `.github/workflows/ci.yml`).
 
 `docs/` and `specs/` remain the source of truth the code was built against.
+
+---
+
+## CI/CD
+
+Every pull request runs lint, formatting and type checks, the no-float check on
+`app/domain/`, the backend suite against Postgres, a migration round-trip, the frontend
+suite and build, and a build of both production images.
+
+A green run on `main` publishes images to GHCR tagged with the commit SHA and deploys them
+to staging. Tagging a commit `vX.Y.Z` promotes that same image, without rebuilding it, to
+production behind a manual approval. Each deploy backs up the database, migrates, then
+smoke-tests `/api/v1/ready` and `/api/v1/version`, and rolls the containers back if
+anything fails. One-time setup, releasing, and rollback are in `docs/deployment.md`.
 
 ---
 

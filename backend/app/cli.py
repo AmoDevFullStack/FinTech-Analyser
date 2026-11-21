@@ -1,4 +1,4 @@
-"""`python -m app.cli seed --demo`, per README.md's quick start."""
+"""`flask --app wsgi seed demo` (and `events drain|failed`), per README.md's quick start."""
 
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ from app.core.auth import hash_password
 from app.core.events import MAX_ATTEMPTS, dispatch_pending
 from app.core.extensions import db
 from app.models.account import Account, AccountType, BalanceSource
-from app.repositories.domain_event import DomainEventRepository
 from app.models.transaction import Direction, Transaction
 from app.models.user import User
+from app.repositories.domain_event import DomainEventRepository
 from app.services.category_seed import ensure_system_categories
 from app.services.import_service import make_fingerprint, normalise_description
 from app.services.spending_insight import SpendingInsightService
