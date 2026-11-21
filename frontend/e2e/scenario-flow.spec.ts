@@ -1,14 +1,17 @@
 import { expect, test } from "@playwright/test";
 
 /** Import through scenario result, per docs/architecture.md §6 and PLAN.md's quality
- * gate. Requires the full stack (docker compose up) with a seeded demo user — this spec
- * is written to the plan's verification section and was not executed in the sandboxed
- * session that wrote it (no Postgres/Docker there); run it via
- * `docker compose run --rm playwright npx playwright test`.
+ * gate. Requires the full stack with a seeded demo user:
+ *
+ *   make up && make migrate && make seed && make e2e
+ *
+ * CI runs it in the `e2e` job of .github/workflows/ci.yml. The defaults match what
+ * `flask seed demo` creates (backend/app/cli.py); override them to run against another
+ * environment.
  */
 
-const DEMO_EMAIL = "demo@financialdigitaltwin.local";
-const DEMO_PASSWORD = "AN@";
+const DEMO_EMAIL = process.env.E2E_EMAIL ?? "demo@financialdigitaltwin.local";
+const DEMO_PASSWORD = process.env.E2E_PASSWORD ?? "demo-password-change-me";
 
 test("import a CSV, run the vehicle purchase scenario, and see the result", async ({ page }) => {
   await page.goto("/login");
