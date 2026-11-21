@@ -57,9 +57,7 @@ class Config:
     # NullInterpreter and the assistant returns figures with `narration_available: false`,
     # which is the path requirement 12 keeps working and the one developed against.
     OPENAI_API_KEY: str = field(default_factory=lambda: os.environ.get("OPENAI_API_KEY", ""))
-    OPENAI_MODEL: str = field(
-        default_factory=lambda: os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
-    )
+    OPENAI_MODEL: str = field(default_factory=lambda: os.environ.get("OPENAI_MODEL", "gpt-4o-mini"))
     OPENAI_BASE_URL: str = field(default_factory=lambda: os.environ.get("OPENAI_BASE_URL", ""))
     # Short on purpose: narration is the optional half of the response, so waiting on it
     # is worse than shipping the figures without it.
@@ -67,9 +65,22 @@ class Config:
         default_factory=lambda: float(os.environ.get("OPENAI_TIMEOUT_SECONDS", "8"))
     )
 
-    SQLALCHEMY_ENGINE_OPTIONS: dict = field(
-        default_factory=lambda: {"pool_pre_ping": True}
+    # Rate-limit counters. Shared storage, not Flask-Limiter's in-memory default: gunicorn
+    # runs several workers, and per-process counters would multiply the login limit by the
+    # worker count and reset it on every deploy.
+    RATELIMIT_STORAGE_URI: str = field(
+        default_factory=lambda: (
+            os.environ.get("RATELIMIT_STORAGE_URI") or _env("REDIS_URL", "redis://redis:6379/0")
+        )
     )
+
+    # Build identity, baked into the image by .github/workflows/cd.yml and reported by
+    # GET /api/v1/version. The defaults are what a local, unreleased build reports.
+    APP_VERSION: str = field(default_factory=lambda: os.environ.get("APP_VERSION", "dev"))
+    BUILD_SHA: str = field(default_factory=lambda: os.environ.get("BUILD_SHA", "unknown"))
+    BUILD_TIME: str = field(default_factory=lambda: os.environ.get("BUILD_TIME", ""))
+
+    SQLALCHEMY_ENGINE_OPTIONS: dict = field(default_factory=lambda: {"pool_pre_ping": True})
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
 
     TESTING: bool = False
@@ -84,6 +95,8 @@ class TestConfig(Config):
         )
     )
     REDIS_URL: str = "redis://localhost:6379/1"
+    # In-process counters keep the suite independent of a running Redis.
+    RATELIMIT_STORAGE_URI: str = "memory://"
     SESSION_COOKIE_SECURE: bool = False
     TESTING: bool = True
     JWT_SECRET_KEY: str = "test-secret"
