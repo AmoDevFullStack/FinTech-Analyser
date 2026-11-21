@@ -34,7 +34,7 @@ never produces them. That boundary is the product.
 | Database | PostgreSQL |
 | Queue | Redis + RQ |
 | Testing | pytest, Hypothesis, Vitest, Playwright |
-| Infrastructure | Docker, Docker Compose, Nginx, Terraform |
+| Infrastructure | Docker, Docker Compose, Nginx, Caddy, Terraform (AWS: EC2, RDS, ECR, SSM) |
 
 ---
 
@@ -133,12 +133,14 @@ financial-digital-twin/
 │       └── core/
 ├── frontend/src/
 ├── infrastructure/
+│   ├── caddy/          TLS termination in production
 │   ├── docker/
-│   └── nginx/          development routing (production: frontend/nginx.conf)
-├── scripts/            smoke_test.py, remote-deploy.sh
+│   ├── nginx/          development routing (production: frontend/nginx.conf)
+│   └── terraform/      AWS: bootstrap, global, modules/environment, envs/{staging,production}
+├── scripts/            aws_deploy.py, remote-deploy.sh, smoke_test.py
 ├── .github/            CI, CD, Dependabot
 ├── docker-compose.yml       development stack
-├── docker-compose.prod.yml  staging and production, from published images
+├── docker-compose.prod.yml  staging and production hosts, from ECR images
 ├── Makefile
 ├── .env.example
 ├── PLAN.md
@@ -174,11 +176,14 @@ Every pull request runs lint, formatting and type checks, the no-float check on
 `app/domain/`, the backend suite against Postgres, a migration round-trip, the frontend
 suite and build, and a build of both production images.
 
-A green run on `main` publishes images to GHCR tagged with the commit SHA and deploys them
-to staging. Tagging a commit `vX.Y.Z` promotes that same image, without rebuilding it, to
-production behind a manual approval. Each deploy backs up the database, migrates, then
-smoke-tests `/api/v1/ready` and `/api/v1/version`, and rolls the containers back if
-anything fails. One-time setup, releasing, and rollback are in `docs/deployment.md`.
+Staging and production run on AWS (af-south-1): one EC2 host per environment running the
+containers, with PostgreSQL on RDS, all defined in Terraform. A green run on `main` pushes
+images to ECR tagged with the commit SHA and deploys them to staging. Tagging a commit
+`vX.Y.Z` promotes that same image, without rebuilding it, to production behind a manual
+approval. Each deploy snapshots the database, migrates, smoke-tests `/api/v1/ready` and
+`/api/v1/version`, and rolls the containers back if anything fails. GitHub authenticates to
+AWS with OIDC, so no AWS keys are stored in the repository settings. Setting up AWS from an
+empty account, releasing, and rollback are in `docs/deployment.md`.
 
 ---
 
