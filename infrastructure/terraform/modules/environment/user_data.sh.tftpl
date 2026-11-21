@@ -1,0 +1,35 @@
+#!/bin/bash
+# First-boot setup for the app host (Amazon Linux 2023). Runs once; everything after this is
+# done by deploys over SSM (scripts/remote-deploy.sh). Log: /var/log/cloud-init-output.log
+set -euxo pipefail
+
+# Docker Engine from the AL2023 repository; Compose plugin pinned and checksum-verified.
+dnf install -y docker dnf-automatic
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -fsSL -o /usr/local/lib/docker/cli-plugins/docker-compose \
+  "https://github.com/docker/compose/releases/download/${compose_version}/docker-compose-linux-x86_64"
+echo "${compose_sha256}  /usr/local/lib/docker/cli-plugins/docker-compose" | sha256sum -c -
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+# Rotate container logs; the default json-file driver grows without limit.
+cat > /etc/docker/daemon.json <<'JSON'
+{ "log-driver": "json-file", "log-opts": { "max-size": "20m", "max-file": "5" } }
+JSON
+systemctl enable --now docker
+
+# Apply security updates automatically. Kernel updates take effect on the next reboot.
+sed -i 's/^upgrade_type.*/upgrade_type = security/; s/^apply_updates.*/apply_updates = yes/' \
+  /etc/dnf/automatic.conf
+systemctl enable --now dnf-automatic.timer
+
+# A small swap file: image pulls and the frontend container can briefly spike memory on 2 GB.
+if [ ! -f /swapfile ]; then
+  fallocate -l 2G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
+mkdir -p "${deploy_path}"
+chmod 750 "${deploy_path}"
