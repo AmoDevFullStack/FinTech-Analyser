@@ -1,8 +1,8 @@
 # Architecture decisions
 
 Decisions recorded here have been made deliberately and should not be reversed casually.
-If a change would contradict one of
-these, stop and raise it rather than implementing around it.
+If a change would contradict one of these, stop and raise it rather than implementing
+around it.
 
 Each record states what would have to be true to revisit it. That clause is the
 useful part — a decision with no revisit condition is dogma, not engineering.
@@ -95,7 +95,8 @@ the rate arithmetic without conversion ceremony. The readability of `NUMERIC` co
 production debugging is a real secondary benefit.
 
 Option A's weakness is discipline at boundaries. That is addressable with tooling: the
-serialisation layer, a lint rule, and the domain-engine conventions all enforce it.
+serialisation layer, a CI check, and the conventions in `docs/domain-engines.md` all
+enforce it.
 
 ## Consequences
 

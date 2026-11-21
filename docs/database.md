@@ -296,7 +296,7 @@ term, additional monthly cost, income delta.
 
 `assumptions_hash` and `engine_version` are what make a stored result reproducible. When
 an engine changes such that a stored result would no longer be reproduced, that is a
-behavioural change — see the closing section of the domain-engine conventions.
+behavioural change — see `docs/domain-engines.md`, rule 6.
 
 Constraint: no foreign key from any real financial table to a scenario table. The
 dependency runs one way only. A test asserts that a scenario run issues zero writes to

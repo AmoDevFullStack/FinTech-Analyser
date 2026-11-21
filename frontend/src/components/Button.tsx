@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react";
 
 type Variant = "primary" | "secondary";
 
-/** Liquid Glass after Apple's Human Interface Guidelines: translucent fill, backdrop blur,
+/** Liquid Glass, after Apple's Human Interface Guidelines: translucent fill, backdrop blur,
  * a hairline highlight border, colour reserved for the one prominent action per view
  * (primary) while secondary stays monochrome glass. Fixed white/accent-rgb values are
  * safe here because the app is forced to light appearance — see index.css. `--accent`

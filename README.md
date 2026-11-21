@@ -197,12 +197,9 @@ docker compose run --rm playwright                    # end to end (needs the de
    needs a working `downgrade()`. Follow the expand/contract rules in
    [`docs/deployment.md`](docs/deployment.md) §6, so the previous release can still run
    against the new schema.
-5. Feature work starts from its spec in `specs/`. Calculation code follows ADR-001 and
-   `docs/architecture.md` §5.
-
-Contributors should read `docs/architecture.md` and
-`docs/decisions.md` before your first change, and the relevant file in `specs/` before
-implementing a feature.
+5. Feature work starts from its spec in `specs/`. Read `docs/architecture.md` and
+   `docs/decisions.md` before a first change. Calculation code follows
+   [`docs/domain-engines.md`](docs/domain-engines.md).
 
 ---
 
@@ -211,7 +208,7 @@ implementing a feature.
 **Money is `Decimal` in Python and `NUMERIC(15, 2)` in Postgres.** Never a float, never a
 JSON number. This is not a preference: projections compound over 60 periods, and
 representation error accumulates into figures a user would be right to distrust. CI fails any
-`float(` in `app/domain/`. See ADR-001.
+`float(` in `app/domain/`. See ADR-001 and `docs/domain-engines.md`.
 
 **The language model never computes a figure.** It receives a computed result and turns it
 into language. See ADR-002.
@@ -232,6 +229,7 @@ supplied it.
 |---|---|
 | What must the system do? | [`docs/requirements.md`](docs/requirements.md) |
 | How is the code organised, and what may each layer contain? | [`docs/architecture.md`](docs/architecture.md) |
+| What rules does calculation code follow? | [`docs/domain-engines.md`](docs/domain-engines.md) |
 | Why was it built this way, and what may I not change? | [`docs/decisions.md`](docs/decisions.md) |
 | How is data modelled? | [`docs/database.md`](docs/database.md) |
 | What is the HTTP contract? | [`docs/api.md`](docs/api.md) |

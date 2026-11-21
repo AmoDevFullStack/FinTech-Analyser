@@ -6,7 +6,7 @@ from app.domain.cash_flow import cash_flow_summary, debt_to_income
 
 
 def test_cash_flow_summary_matches_dashboard_worked_example() -> None:
-    """Reference: the published dashboard mock (.design/Main.dc.html) — income R52,000,
+    """Reference: the dashboard design mock's worked example — income R52,000,
     essential R31,400, discretionary R9,800, remaining R10,800.
     """
     summary = cash_flow_summary(

@@ -12,7 +12,7 @@ def test_amortisation_matches_worked_example() -> None:
     module's own docstring states — i = 0.1175/12, instalment = P*i/(1-(1+i)**-72) —
     solved to full precision and cross-checked with an independent float computation.
 
-    Note: specs/scenarios.md and the domain-engine conventions both cite this same
+    Note: specs/scenarios.md and earlier project notes both cite this same
     R350,000/11.75%/72-month example with a first instalment of R6,843.41. That figure
     does not satisfy the standard reducing-balance formula those same documents specify
     (it implies a nominal rate of ~12.005%, not 11.75%) — it was never independently

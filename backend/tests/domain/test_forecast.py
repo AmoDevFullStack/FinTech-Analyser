@@ -100,7 +100,7 @@ def _flat_baseline() -> BehaviouralBaseline:
 
 
 def test_projection_without_growth_is_flat() -> None:
-    """The invariant from the domain-engine conventions: zero change in, flat out."""
+    """Invariant (docs/domain-engines.md rule 5): zero change in, flat out."""
     periods = project_forecast(
         baseline=_flat_baseline(),
         opening_savings=Decimal("10000.00"),

@@ -2,7 +2,7 @@
 
 See specs/debts.md and docs/api.md. All arithmetic lives in app/domain/amortisation.py
 and app/domain/debt_payoff.py; this service only assembles their inputs and shapes their
-outputs — it computes nothing itself, per the domain-engine conventions.
+outputs — it computes nothing itself, per docs/domain-engines.md rule 1.
 """
 
 from __future__ import annotations

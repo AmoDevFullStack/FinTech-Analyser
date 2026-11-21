@@ -150,7 +150,7 @@ def compute_health_score(
 
     Assumptions:
         - Every ratio arrives pre-computed by the caller (this engine has no notion of
-          accounts, transactions, or dates — see the domain-engine conventions, rule 1).
+          accounts, transactions, or dates — see docs/domain-engines.md, rule 1).
         - Weights: emergency cover 25%, debt burden 20%, cash-flow margin 20%, savings
           rate 15%, credit utilisation 10%, cash-flow stability 10% — sum to 100%,
           per specs/financial-health.md. `WEIGHTS_VERSION` changes if these ever do.

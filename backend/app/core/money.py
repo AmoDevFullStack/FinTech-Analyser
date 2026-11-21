@@ -1,7 +1,8 @@
 """Decimal helpers for the money boundary. See ADR-001.
 
 This module is the only place quantisation policy is defined. Domain engines quantise
-their own period results per their own documented rounding policy (domain-engine conventions) — this module is for the serialisation and repository boundary: turning a Decimal
+their own period results per their own documented rounding policy (docs/domain-engines.md,
+rule 3) — this module is for the serialisation and repository boundary: turning a Decimal
 into the exact string that crosses the API, and back.
 """
 

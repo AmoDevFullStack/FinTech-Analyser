@@ -99,9 +99,9 @@ Stated rather than left to be discovered:
   and returning 202 as `docs/api.md` specifies; no queue worker is wired to the API.
 - Scenario `apply` (writing a scenario to real state, with confirmation and an audit
   record) is specified but not built.
-- The database-backed test suite has never been executed: no Postgres was available in
-  the environment this was built in. The domain and unit suites pass; the repository and
-  service suites error on connection.
+- ~~The database-backed suites had never run.~~ Resolved: every backend suite, the
+  repository and service suites included, now runs against PostgreSQL 16 in CI on every
+  pull request.
 
 ---
 

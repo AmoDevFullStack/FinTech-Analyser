@@ -49,7 +49,7 @@ def amortisation_schedule(
 
     Rounding:
         Instalment and per-period interest/principal/closing balance are quantised to two
-        places with ROUND_HALF_UP, per the domain-engine conventions. The final
+        places with ROUND_HALF_UP, per docs/domain-engines.md rule 3. The final
         period's principal component is adjusted so the closing balance is exactly zero,
         matching what a lender's statement shows.
 

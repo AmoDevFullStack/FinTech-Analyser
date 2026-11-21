@@ -2,7 +2,8 @@
 
 The descriptions below are the shapes South African bank CSV exports actually produce —
 FNB, Standard Bank, Absa, Nedbank, Capitec — with amounts and account references changed.
-They are the reference source for these assertions in the sense the domain-engine conventions means: the expected answer comes from what the statement line says, not from what the
+They are the reference source for these assertions in the sense of docs/domain-engines.md
+rule 4: the expected answer comes from what the statement line says, not from what the
 code currently does.
 """
 

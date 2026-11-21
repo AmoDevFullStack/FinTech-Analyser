@@ -54,8 +54,8 @@ conditions.
 
 ## Constraints
 
-- All arithmetic in `app/domain/`, `Decimal` throughout, per the
-  domain-engine conventions.
+- All arithmetic in `app/domain/`, `Decimal` throughout, per
+  `docs/domain-engines.md`.
 - Schedules are deterministic and reproducible.
 - Every engine is tested against reference figures derived independently — a spreadsheet
   model or a published lender schedule, never the code's own output.

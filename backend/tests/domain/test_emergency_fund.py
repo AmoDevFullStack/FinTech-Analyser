@@ -10,7 +10,7 @@ def test_emergency_fund_months_matches_dashboard_worked_example() -> None:
     """Reference: R48,200 liquid savings against R31,400 monthly essential spending is
     48200/31400 = 1.535031847... months, independently divided by hand.
 
-    Note: the published dashboard mock (.design/Main.dc.html) shows this pair as "1.53
+    Note: the dashboard design mock shows this pair as "1.53
     months" — that figure was written as illustrative sample copy and was never actually
     divided; the correct value rounds to 1.54, asserted here.
     """

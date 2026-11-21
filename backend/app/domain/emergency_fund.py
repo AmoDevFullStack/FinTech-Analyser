@@ -65,8 +65,8 @@ def project_depletion_date(
         - `monthly_net_drawdown` is the amount the fund shrinks by each month, i.e. a
           positive number when spending exceeds income. A drawdown <= 0 means the fund
           never depletes under current behaviour, and this returns None.
-        - `as_of` is an explicit argument, never `date.today()` — see the
-          domain-engine skill, rule 1.
+        - `as_of` is an explicit argument, never `date.today()` — see
+          docs/domain-engines.md, rule 1.
 
     Rounding:
         The month count is taken as a whole number of months via `Decimal.to_integral_value`

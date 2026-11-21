@@ -8,11 +8,12 @@ Structure lives in `docs/frontend.md`. Behaviour lives in `specs/`. Decisions th
 not be casually reversed live in `docs/decisions.md`. This file describes appearance and
 the rules that govern it.
 
-**Provenance.** The rules below are derived from Apple's Human Interface Guidelines. This product is a web
-application, so Apple's *platform conventions* — tab bars, sheets, the menu bar, safe
-areas — do not apply and are not cited. Apple's *foundations* — accessibility, colour,
-typography, layout, writing, charting — do apply, and are cited as `file.md › Heading`
-where a rule comes from them. Anything not cited is a judgment call and says so.
+**Provenance.** The rules below are derived from Apple's Human Interface Guidelines. This
+product is a web application, so Apple's *platform conventions* — tab bars, sheets, the
+menu bar, safe areas — do not apply and are not cited. Apple's *foundations* —
+accessibility, colour, typography, layout, writing, charting — do apply, and are cited as
+`topic.md › Heading` (the HIG topic and section) where a rule comes from them. Anything not
+cited is a judgment call and says so.
 
 ---
 
